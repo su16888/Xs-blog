@@ -1,7 +1,5 @@
-# Xs-blog - 现代化个人主页系统
-
 <div align="center">
-
+<h1>Xs-blog - 现代化个人主页系统</h1>
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.3-blue)](https://github.com/su16888/Xs-blog)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen)](https://nodejs.org/)
