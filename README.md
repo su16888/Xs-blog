@@ -7,7 +7,7 @@
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D14.0.0-brightgreen)](https://nodejs.org/)
 [![MySQL Version](https://img.shields.io/badge/mysql-%3E%3D5.7-orange)](https://www.mysql.com/)
 
-[快速部署](#-快速部署指南.md) | [功能特性](#-功能特性.md) | [详细部署指南](#-部署指南.md)| [环境变量配置](#-环境变量配置指南.md)
+[快速部署](#-快速部署指南.md) | [功能特性](#-功能特性.md) | [详细部署指南](#-部署指南.md)| [环境变量配置](#-环境变量配置指南.md)| [全部图片展示](#-图片展示.md)
 
 </div>
 
