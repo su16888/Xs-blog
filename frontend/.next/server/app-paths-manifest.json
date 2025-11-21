@@ -1,0 +1,21 @@
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/admins/blog-theme/page": "app/admins/blog-theme/page.js",
+  "/admins/login/page": "app/admins/login/page.js",
+  "/admins/dashboard/page": "app/admins/dashboard/page.js",
+  "/admins/page": "app/admins/page.js",
+  "/admins/other/page": "app/admins/other/page.js",
+  "/admins/notes/page": "app/admins/notes/page.js",
+  "/admins/profile/page": "app/admins/profile/page.js",
+  "/admins/sites/page": "app/admins/sites/page.js",
+  "/admins/sticky-notes/page": "app/admins/sticky-notes/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/admins/todos/page": "app/admins/todos/page.js",
+  "/messages/page": "app/messages/page.js",
+  "/admins/social-links/page": "app/admins/social-links/page.js",
+  "/admins/settings/page": "app/admins/settings/page.js",
+  "/navigation/page": "app/navigation/page.js",
+  "/note/[id]/page": "app/note/[id]/page.js",
+  "/notes/page": "app/notes/page.js",
+  "/page": "app/page.js"
+}
