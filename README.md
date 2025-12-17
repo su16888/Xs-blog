@@ -8,7 +8,7 @@
 [![MySQL Version](https://img.shields.io/badge/mysql-%3E%3D5.6-orange)](https://www.mysql.com/)
 [![SQLite Version](https://img.shields.io/badge/sqlite-%3E%3D3.0-blue)](https://www.sqlite.org/)
 
-[快速部署](#docs/快速部署指南) | [功能特性](#docs/功能特性) | [详细部署指南](#docs/部署指南) | [常见问题](#docs/常见问题解决方案.md)
+[快速部署](docs/快速部署指南) | [功能特性](docs/功能特性) | [详细部署指南](docs/部署指南) | [常见问题](docs/常见问题解决方案.md)
 
 </div>
 
