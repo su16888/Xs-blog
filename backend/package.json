@@ -1,0 +1,46 @@
+{
+  "name": "xs-blog-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Xs-blog system",
+  "main": "src/app.js",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "obfuscate": "node obfuscate.js",
+    "build:prod": "npm run obfuscate",
+    "start:prod": "node dist/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "xs-blog",
+    "blog",
+    "api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.946.0",
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.1.2",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
+    "express-validator": "^7.3.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "mysql2": "^3.15.3",
+    "node-cache": "^5.1.2",
+    "nodemailer": "^7.0.11",
+    "sequelize": "^6.37.7",
+    "sharp": "^0.34.5",
+    "svg-captcha": "^1.4.0",
+    "undici": "^7.16.0"
+  },
+  "optionalDependencies": {
+    "sqlite3": "^5.1.7"
+  }
+}

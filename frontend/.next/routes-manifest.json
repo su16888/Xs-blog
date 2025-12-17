@@ -1,0 +1,272 @@
+{
+  "version": 3,
+  "pages404": true,
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [
+    {
+      "source": "/:path((?!favicon.ico|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)",
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        }
+      ],
+      "regex": "^(?:/((?!favicon.ico|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*))(?:/)?$"
+    }
+  ],
+  "rewrites": {
+    "beforeFiles": [
+      {
+        "source": "/:path*.md",
+        "destination": "/docs/:path*.md",
+        "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?\\.md(?:/)?$"
+      }
+    ],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/docs/[...slug]",
+      "regex": "^/docs/(.+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPslug": "nxtPslug"
+      },
+      "namedRegex": "^/docs/(?<nxtPslug>.+?)(?:/)?$"
+    },
+    {
+      "page": "/note/[id]",
+      "regex": "^/note/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/note/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/admins",
+      "regex": "^/admins(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins(?:/)?$"
+    },
+    {
+      "page": "/admins/blog-theme",
+      "regex": "^/admins/blog\\-theme(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/blog\\-theme(?:/)?$"
+    },
+    {
+      "page": "/admins/dashboard",
+      "regex": "^/admins/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/dashboard(?:/)?$"
+    },
+    {
+      "page": "/admins/galleries",
+      "regex": "^/admins/galleries(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/galleries(?:/)?$"
+    },
+    {
+      "page": "/admins/login",
+      "regex": "^/admins/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/login(?:/)?$"
+    },
+    {
+      "page": "/admins/notes",
+      "regex": "^/admins/notes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/notes(?:/)?$"
+    },
+    {
+      "page": "/admins/other",
+      "regex": "^/admins/other(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/other(?:/)?$"
+    },
+    {
+      "page": "/admins/profile",
+      "regex": "^/admins/profile(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/profile(?:/)?$"
+    },
+    {
+      "page": "/admins/promo-settings",
+      "regex": "^/admins/promo\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/promo\\-settings(?:/)?$"
+    },
+    {
+      "page": "/admins/services",
+      "regex": "^/admins/services(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/services(?:/)?$"
+    },
+    {
+      "page": "/admins/settings",
+      "regex": "^/admins/settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/settings(?:/)?$"
+    },
+    {
+      "page": "/admins/sites",
+      "regex": "^/admins/sites(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/sites(?:/)?$"
+    },
+    {
+      "page": "/admins/social-feed",
+      "regex": "^/admins/social\\-feed(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/social\\-feed(?:/)?$"
+    },
+    {
+      "page": "/admins/social-links",
+      "regex": "^/admins/social\\-links(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/social\\-links(?:/)?$"
+    },
+    {
+      "page": "/admins/sticky-notes",
+      "regex": "^/admins/sticky\\-notes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/sticky\\-notes(?:/)?$"
+    },
+    {
+      "page": "/admins/text-settings",
+      "regex": "^/admins/text\\-settings(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/text\\-settings(?:/)?$"
+    },
+    {
+      "page": "/admins/todos",
+      "regex": "^/admins/todos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/admins/todos(?:/)?$"
+    },
+    {
+      "page": "/blog",
+      "regex": "^/blog(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/blog(?:/)?$"
+    },
+    {
+      "page": "/docs",
+      "regex": "^/docs(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/docs(?:/)?$"
+    },
+    {
+      "page": "/galleries",
+      "regex": "^/galleries(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/galleries(?:/)?$"
+    },
+    {
+      "page": "/messages",
+      "regex": "^/messages(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/messages(?:/)?$"
+    },
+    {
+      "page": "/navigation",
+      "regex": "^/navigation(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/navigation(?:/)?$"
+    },
+    {
+      "page": "/notes",
+      "regex": "^/notes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/notes(?:/)?$"
+    },
+    {
+      "page": "/promo",
+      "regex": "^/promo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/promo(?:/)?$"
+    },
+    {
+      "page": "/robots.txt",
+      "regex": "^/robots\\.txt(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/robots\\.txt(?:/)?$"
+    },
+    {
+      "page": "/services",
+      "regex": "^/services(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/services(?:/)?$"
+    },
+    {
+      "page": "/social-feed",
+      "regex": "^/social\\-feed(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/social\\-feed(?:/)?$"
+    },
+    {
+      "page": "/user",
+      "regex": "^/user(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/user(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSuffix": ".prefetch.rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

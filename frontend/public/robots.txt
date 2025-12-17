@@ -1,0 +1,35 @@
+# Robots.txt - Block all crawlers from admin area
+User-agent: *
+Disallow: /admins
+Disallow: /admins/
+
+# Block common crawlers and bots
+User-agent: Googlebot
+Disallow: /admins
+
+User-agent: Bingbot
+Disallow: /admins
+
+User-agent: Slurp
+Disallow: /admins
+
+User-agent: DuckDuckBot
+Disallow: /admins
+
+User-agent: Baiduspider
+Disallow: /admins
+
+User-agent: YandexBot
+Disallow: /admins
+
+User-agent: Sogou
+Disallow: /admins
+
+User-agent: Exabot
+Disallow: /admins
+
+User-agent: facebot
+Disallow: /admins
+
+User-agent: ia_archiver
+Disallow: /admins
