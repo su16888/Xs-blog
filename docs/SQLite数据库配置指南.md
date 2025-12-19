@@ -2,17 +2,7 @@
 
 ---
 
-## 📋 概述
 
-Xs-Blog V3.0.0 支持 SQLite 数据库。SQLite 是一个轻量级的嵌入式数据库，无需安装和配置独立的数据库服务器，特别适合以下场景：
-
-- ✅ 快速体验和测试
-- ✅ 开发环境
-- ✅ 小型个人网站
-- ✅ 低流量部署
-- ✅ 便携式部署
-
----
 
 ## 🎯 数据库类型对比
 
@@ -47,23 +37,8 @@ Xs-Blog V3.0.0 支持 SQLite 数据库。SQLite 是一个轻量级的嵌入式�
 DB_TYPE=sqlite                             # 使用 SQLite 数据库
 DB_PATH=./database/xsblog.db               # 数据库文件路径
 
-# JWT 配置（必须修改）
-JWT_SECRET=your_jwt_secret_key_here        # 至少32字符
-
-# 其他配置
-PORT=3001
-NODE_ENV=production
-UPLOAD_PATH=./uploads
-
-# 授权配置（必填）
-AUTH_CODE=向作者免费索要授权码
 ```
 
-**生成随机密钥**：
-
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
 
 #### 步骤 3：初始化数据库
 
@@ -138,10 +113,6 @@ DB_PATH=./database/xsblog.db
 
 - 使用 [pgloader](https://pgloader.io/) 等数据库迁移工具
 - 使用 [sqlalchemy](https://www.sqlalchemy.org/) 编写迁移脚本
-
-**方式 C：重新开始（推荐开发环境）**
-
-如果是开发环境或测试数据，建议直接使用 SQLite 重新开始。
 
 ---
 
@@ -324,51 +295,6 @@ DB_PASSWORD=your_password
 
 ---
 
-## ⚙️ 高级配置
-
-### 开启 WAL 模式（提升性能）
-
-WAL (Write-Ahead Logging) 模式可以提升 SQLite 的并发性能。
-
-创建文件 `backend/src/config/sqlite-config.js`：
-
-```javascript
-const { Sequelize } = require('sequelize');
-
-function configureSQLite(sequelize) {
-  if (sequelize.options.dialect === 'sqlite') {
-    // 开启 WAL 模式
-    sequelize.query('PRAGMA journal_mode = WAL;');
-
-    // 优化性能
-    sequelize.query('PRAGMA synchronous = NORMAL;');
-    sequelize.query('PRAGMA cache_size = -64000;'); // 64MB 缓存
-    sequelize.query('PRAGMA temp_store = MEMORY;');
-  }
-}
-
-module.exports = configureSQLite;
-```
-
-在 `backend/src/config/database.js` 中使用：
-
-```javascript
-const configureSQLite = require('./sqlite-config');
-
-// 测试数据库连接后配置
-const testConnection = async () => {
-  try {
-    await sequelize.authenticate();
-    configureSQLite(sequelize); // 添加这行
-    console.log('✅ Database connection established successfully.');
-  } catch (error) {
-    console.error('❌ Unable to connect to the database:', error);
-    process.exit(1);
-  }
-};
-```
-
----
 
 ## 📊 性能优化建议
 
@@ -467,15 +393,11 @@ SQLite 本身不支持加密，敏感数据应该在应用层加密。
 
 ### 何时使用 SQLite
 
-| 场景 | 推荐数据库 |
-|------|-----------|
-| 快速体验 Xs-Blog | SQLite ✅ |
-| 本地开发环境 | SQLite ✅ |
-| 个人博客（日访问 < 1000） | SQLite ✅ |
-| 小型团队内部工具 | SQLite ✅ |
-| 企业级应用 | MySQL ✅ |
-| 高并发网站（日访问 > 10万） | MySQL ✅ |
-| 大数据量应用（> 1GB） | MySQL ✅ |
+|          场景           | 推荐数据库 |
+| ---------------------- | ---------- |
+| 快速部署体验 Xs-Blog     | SQLite ✅ |
+| 个人博客（日访问 < 500） | SQLite ✅ |
+
 
 ### 从 SQLite 迁移到 MySQL
 
@@ -487,5 +409,5 @@ SQLite 本身不支持加密，敏感数据应该在应用层加密。
 
 ---
 
-**版本**: V3.0.0正式版
+**版本**: V3.2.0正式版
 **更新日期**: 2025-12-17

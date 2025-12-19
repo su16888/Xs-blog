@@ -3,12 +3,13 @@
 # Xs-blog - 现代化个人主页系统
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.0.0-blue)](https://github.com/su16888/Xs-blog)
+[![Version](https://img.shields.io/badge/version-3.2.0-blue)](https://github.com/su16888/Xs-blog)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![MySQL Version](https://img.shields.io/badge/mysql-%3E%3D5.6-orange)](https://www.mysql.com/)
 [![SQLite Version](https://img.shields.io/badge/sqlite-%3E%3D3.0-blue)](https://www.sqlite.org/)
+[![PostgreSQL Version](https://img.shields.io/badge/postgresql-%3E%3D12-blue)](https://www.postgresql.org/)
 
-[快速部署](#docs/快速部署指南) | [功能特性](#docs/功能特性) | [详细部署指南](#docs/部署指南) | [常见问题](#docs/常见问题解决方案.md)
+[快速部署](#docs/快速部署指南.md) | [功能特性](#docs/功能特性.md) | [详细部署指南](#docs/部署指南.md) | [常见问题](#docs/常见问题解决方案.md)
 
 </div>
 
@@ -16,7 +17,7 @@
 
 ## 📖 项目简介
 
-**Xs-blog V3.0.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
+**Xs-blog V3.2.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
 
 ### 🌟 为什么选择 Xs-blog？
 
@@ -24,7 +25,7 @@
 - **🎨 多主题模式**：个人主页、博客模式、官网主题、朋友圈主题自由切换
 - **📱 响应式设计**：完美适配PC、WAP、PAD三端
 - **🛠️ 功能丰富**：笔记、图库、服务业务、留言、待办等 10+ 功能模块
-- **💾 多数据库支持**：MySQL、SQLite 双数据库支持，灵活部署
+- **💾 多数据库支持**：MySQL、SQLite、PostgreSQL 三数据库支持，灵活部署
 
 ---
 
@@ -62,7 +63,7 @@
 
 ### 后端技术栈
 - **框架**: Express 5.2.1 (Node.js)
-- **数据库**: MySQL 5.6+ / SQLite 3
+- **数据库**: MySQL 5.6+ / SQLite 3 / PostgreSQL 12+
 - **ORM**: Sequelize 6.37.7
 - **身份验证**: JWT + bcryptjs
 - **安全防护**: Helmet + CORS + Express-rate-limit
@@ -89,9 +90,10 @@
 - **npm** >= 9.0.0
 - **PM2** >= 5.0.0 
 
-**数据库 (二选一)**
+**数据库 (三选一)**
 - **MySQL** >= 5.6 (推荐)
 - **SQLite** >= 3.0 (轻量级)
+- **PostgreSQL** >= 12 (企业级)
 
 ### 第 1 步：获取源码
 
@@ -116,7 +118,7 @@ mysql -u root -p -e "CREATE DATABASE xsblog888 CHARACTER SET utf8mb4 COLLATE utf
 mysql -u root -p xsblog888 < ../database/install.sql
 ```
 
-#### SQLite 方式 (轻量级)
+#### SQLite 方式 (轻量)
 
 ```bash
 # 复制 SQLite 数据库文件
@@ -124,6 +126,26 @@ cp ../database/install-sqlite.sql ./database/
 
 # 初始化数据库
 sqlite3 database/xsblog.db < database/install-sqlite.sql
+```
+
+#### PostgreSQL 方式 (最佳)
+
+```bash
+# 连接到 PostgreSQL
+psql -U postgres
+
+# 创建数据库
+CREATE DATABASE xsblog WITH ENCODING 'UTF8';
+
+# 创建用户并授权
+CREATE USER xsblog_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE xsblog TO xsblog_user;
+
+# 退出
+\q
+
+# 导入数据库结构
+psql -U xsblog_user -d xsblog -f ../database/install-pgsql.sql
 ```
 
 ### 第 3 步：配置后端
@@ -145,9 +167,17 @@ DB_NAME=xsblog888
 DB_USER=root
 DB_PASSWORD=你的MySQL密码
 
-# 数据库配置 (SQLite，二选一)
+# 数据库配置 (SQLite，三选一)
 DB_TYPE=sqlite
 DB_PATH=./database/xsblog.db
+
+# 数据库配置 (PostgreSQL，三选一)
+DB_TYPE=postgres
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=xsblog
+DB_USER=xsblog_user
+DB_PASSWORD=your_PostgreSQL_password
 
 # 应用配置
 PORT=3001
@@ -286,12 +316,12 @@ server {
 
 |     变量名     |           说明            |        默认值         |   是否必填    |
 | ------------- | ------------------------ | -------------------- | ------------ |
-| `DB_TYPE`     | 数据库类型 (mysql/sqlite) | mysql                | 是           |
-| `DB_HOST`     | 数据库主机                | localhost            | MySQL        |
-| `DB_PORT`     | 数据库端口                | 3306                 | MySQL        |
-| `DB_NAME`     | 数据库名                  | xsblog888            | MySQL        |
-| `DB_USER`     | 数据库用户                | root                 | MySQL        |
-| `DB_PASSWORD` | 数据库密码                | -                    | MySQL (必填) |
+| `DB_TYPE`     | 数据库类型 (mysql/sqlite/postgres) | mysql                | 是           |
+| `DB_HOST`     | 数据库主机                | localhost            | MySQL/PostgreSQL        |
+| `DB_PORT`     | 数据库端口                | 3306                 | MySQL/PostgreSQL        |
+| `DB_NAME`     | 数据库名                  | xsblog888            | MySQL/PostgreSQL        |
+| `DB_USER`     | 数据库用户                | root                 | MySQL/PostgreSQL        |
+| `DB_PASSWORD` | 数据库密码                | -                    | MySQL/PostgreSQL (必填) |
 | `DB_PATH`     | SQLite 数据库路径         | ./database/xsblog.db | SQLite       |
 | `JWT_SECRET`  | JWT 加密密钥              | -                    | 必填 (≥32位) |
 | `PORT`        | 后端端口                  | 3001                 | 否           |
@@ -315,54 +345,61 @@ server {
 
 ```
 xs-blog/
-├── backend/                     # 后端服务
+├── backend/                           # 后端服务
 │   ├── src/
-│   │   ├── app.js              # 应用入口
-│   │   ├── config/             # 配置文件
-│   │   │   ├── config.js       # 应用配置
-│   │   │   └── database.js     # 数据库配置
-│   │   ├── controllers/        # 控制器层
-│   │   ├── middlewares/        # 中间件
-│   │   │   ├── auth.js         # 身份验证
-│   │   │   ├── errorHandler.js # 错误处理
-│   │   │   └── security.js     # 安全防护
-│   │   ├── models/             # 数据模型
-│   │   ├── routes/             # 路由定义
-│   │   ├── services/           # 业务逻辑
-│   │   └── utils/              # 工具函数
-│   ├── uploads/                # 文件上传目录
-│   ├── ecosystem.config.js     # PM2 配置
-│   ├── .integrity              # 防篡改/注入
-│   ├── package.json            # 依赖配置
-│   └── .env.example            # 环境变量
+│   │   ├── app.js                    # 应用入口
+│   │   ├── config/                   # 配置文件
+│   │   │   ├── config.js             # 应用配置
+│   │   │   └── database.js           # 数据库配置
+│   │   │   └── database.js           # 数据库配置
+│   │   │   └── postgres-config.js    # pgsql优化
+
+│   │   ├── controllers/              # 控制器层
+│   │   ├── middlewares/              # 中间件
+│   │   │   ├── auth.js               # 身份验证
+│   │   │   ├── errorHandler.js       # 错误处理
+│   │   │   └── security.js           # 安全防护
+│   │   ├── models/                   # 数据模型
+│   │   ├── routes/                   # 路由定义
+│   │   ├── services/                 # 业务逻辑
+│   │   └── utils/                    # 工具函数
+│   ├── uploads/                      # 文件上传目录
+│   ├── ecosystem.config.js           # PM2 配置
+│   ├── .integrity                    # 防篡改/注入
+│   ├── package.json                  # 依赖配置
+│   └── .env.example                  # 环境变量
 │
-├── frontend/                   # 前端应用
-│   ├── .next/                  # 页面文件
-│   ├── public/                 # 静态资源
-│   ├── ecosystem.config.js     # PM2 配置
-│   ├── .env.production         # 环境变量
-│   ├── package.json            # 依赖配置
-│   ├── .integrity              # 防篡改/注入
-│   ├── tailwind.config.js      # Tailwind CSS 配置
-│   └── next.config.js          # Next.js 配置
+├── frontend/                         # 前端应用
+│   ├── .next/                        # 页面文件
+│   ├── public/                       # 静态资源
+│   ├── ecosystem.config.js           # PM2 配置
+│   ├── .env.production               # 环境变量
+│   ├── package.json                  # 依赖配置
+│   ├── .integrity                    # 防篡改/注入
+│   ├── tailwind.config.js            # Tailwind CSS 配置
+│   └── next.config.js                # Next.js 配置
 │
-├── database/                   # 数据库脚本
-│   ├── install.sql             # MySQL 数据库结构
-│   └── install-sqlite.sql      # SQLite 数据库结构
+├── database/                         # 数据库脚本
+│   ├── install.sql                   # MySQL 数据库结构
+│   └── install-sqlite.sql            # SQLite 数据库结构
+│   └── install-pgsql.sql             # Postgresql 数据库结构
 │
-├── docs/                       # 文档目录
+├── docs/                             # 文档目录
 │   ├── 部署指南.md              
 │   ├── 快速部署指南.md           
 │   ├── 环境变量配置指南.md       
-│   ├── SQLite数据库配置指南.md  
+│   ├── SQLite数据库配置指南.md
+│   ├── PostgreSQL数据库配置指南.md  
 │   ├── Nginx缓存配置指南.md     
 │   ├── CDN缓存配置建议.md       
 │   ├── 宝塔面板Nginx伪静态配置.md 
-│   ├── 常见问题解决方案.md      
+│   ├── 常见问题解决方案.md  
+│   ├── PostgreSQL数据库配置指南.md
+│   ├── SQLite数据库配置指南.md
 │   └── 功能特性.md              
 │   
-├── README.md                   # 入门手册
-└── LICENSE                     # 许可
+├── README.md                         # 入门手册
+└── LICENSE                           # 许可
 
 ```
 
@@ -451,7 +488,6 @@ xs-blog/
 
 - **问题反馈**: [GitHub Issues](https://github.com/su16888/Xs-blog/issues)
 - **功能建议**: [GitHub Discussions](https://github.com/su16888/Xs-blog/discussions)
-- **邮箱联系**: 86886@88.com
 
 ---
 
