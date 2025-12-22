@@ -198,7 +198,8 @@ const nextConfig = {
   async headers() {
     return [
       {
-        source: '/:path((?!favicon.ico|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)',
+        // 简化路径匹配，避免复杂正则表达式导致构建错误
+        source: '/:path*',
         headers: [
           {
             key: 'X-Content-Type-Options',

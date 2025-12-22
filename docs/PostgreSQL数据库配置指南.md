@@ -463,6 +463,6 @@ mysqldump -u root -p --single-transaction xsblog888 > mysql_data.sql
 
 ---
 
-**版本**: V3.2.0正式版
+**版本**: V3.3.0正式版
 **更新日期**: 2025-12-17
 **文档状态**: ✅ 基于实际项目功能，生产就绪

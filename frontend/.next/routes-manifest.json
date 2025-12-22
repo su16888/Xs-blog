@@ -15,7 +15,7 @@
   ],
   "headers": [
     {
-      "source": "/:path((?!favicon.ico|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*)",
+      "source": "/:path*",
       "headers": [
         {
           "key": "X-Content-Type-Options",
@@ -30,7 +30,7 @@
           "value": "1; mode=block"
         }
       ],
-      "regex": "^(?:/((?!favicon.ico|.*\\.ico|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.webp).*))(?:/)?$"
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))?(?:/)?$"
     }
   ],
   "rewrites": {

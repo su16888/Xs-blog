@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,550899,e=>{"use strict";var t=e.i(843476),i=e.i(426261),o=e.i(690499);function r({children:e}){return(0,t.jsxs)(o.PageTitleProvider,{children:[(0,t.jsx)(i.default,{forceNoIndex:!0}),e]})}e.s(["default",()=>r])}]);
