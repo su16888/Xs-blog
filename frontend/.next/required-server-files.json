@@ -117,7 +117,7 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "D:\\360Downloads\\www\\xsblog\\frontend",
+    "outputFileTracingRoot": "",
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -308,7 +308,7 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.js",
     "turbopack": {
-      "root": "D:\\360Downloads\\www\\xsblog\\frontend"
+      "root": ""
     },
     "distDirRoot": ".next",
     "_originalRewrites": {
@@ -322,7 +322,7 @@
       "fallback": []
     }
   },
-  "appDir": "D:\\360Downloads\\www\\xsblog\\frontend",
+  "appDir": "",
   "relativeAppDir": "",
   "files": [
     ".next\\routes-manifest.json",

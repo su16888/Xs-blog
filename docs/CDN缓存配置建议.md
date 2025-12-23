@@ -604,28 +604,6 @@ X-Cache: BYPASS 或无此头
 - 全球用户访问速度趋于一致
 - 缩略图功能可大幅提升图片加载速度
 
----
-
-## 十、部署结构
-
-后端目录结构（`backend/dist/`）：
-
-```
-dist/
-├── app.js              # 主入口
-├── package.json        # 依赖配置
-├── config/             # 配置文件
-├── controllers/        # 控制器
-├── middlewares/        # 中间件
-├── migrations/         # 数据库迁移
-├── models/             # 数据模型
-├── routes/             # 路由定义
-├── services/           # 服务层
-├── utils/              # 工具函数
-├── uploads/            # 上传目录
-├── logs/               # 日志目录
-└── backups/            # 备份目录
-```
 
 **部署注意**：
 - `uploads/` 目录需要从源站同步或挂载共享存储
