@@ -9,7 +9,13 @@
 [![SQLite Version](https://img.shields.io/badge/sqlite-%3E%3D3.0-blue)](https://www.sqlite.org/)
 [![PostgreSQL Version](https://img.shields.io/badge/postgresql-%3E%3D12-blue)](https://www.postgresql.org/)
 
+<<<<<<< HEAD
 [快速部署](docs/快速部署指南.md) | [功能特性](docs/功能特性.md) | [详细部署指南](docs/部署指南.md) | [常见问题](docs/常见问题解决方案.md)
+=======
+
+[快速部署](docs/快速部署指南.md) | [功能特性](docs/功能特性.md) | [详细部署指南](docs/部署指南.md) | [常见问题](docs/常见问题解决方案.md)
+
+>>>>>>> 3c966cac602cbd438ac21f90314b98436aeffd0f
 
 </div>
 

@@ -21,44 +21,9 @@
 
 
 
-### 管理后台路由（不缓存）
-| 路由 | 说明 |
-|------|------|
-| `/admins` | 管理首页 |
-| `/admins/login` | 登录页 |
-| `/admins/dashboard` | 仪表板 |
-| `/admins/profile` | 个人资料 |
-| `/admins/settings` | 系统设置 |
-| `/admins/notes` | 笔记管理 |
-| `/admins/sites` | 导航管理 |
-| `/admins/galleries` | 图库管理 |
-| `/admins/services` | 服务管理 |
-| `/admins/social-links` | 社交链接 |
-| `/admins/blog-theme` | 博客主题 |
-| `/admins/promo-settings` | 官网设置 |
-| `/admins/text-settings` | 文本设置 |
-| `/admins/social-feed` | 朋友圈管理 |
-| `/admins/todos` | 待办事项 |
-| `/admins/sticky-notes` | 便签管理 |
-| `/admins/other` | 其他设置 |
+### 管理后台路由 `/admins/*`（不缓存）
 
-### API 接口路由（不缓存）
-| 路由 | 说明 |
-|------|------|
-| `/api/auth/*` | 认证接口 |
-| `/api/admin/*` | 管理接口 |
-| `/api/settings` | 公开设置 |
-| `/api/profile` | 公开资料 |
-| `/api/social-links` | 社交链接 |
-| `/api/sites` | 导航数据 |
-| `/api/notes` | 笔记列表 |
-| `/api/notes/:id` | 笔记详情 |
-| `/api/galleries` | 图库数据 |
-| `/api/services` | 服务数据 |
-| `/api/messages` | 留言接口 |
-| `/api/promo/*` | 官网数据 |
-| `/api/social-feed/*` | 朋友圈数据 |
-| `/api/captcha` | 验证码 |
+### API 接口路由 `/api/auth/*`（不缓存）
 
 ---
 
@@ -604,6 +569,12 @@ X-Cache: BYPASS 或无此头
 - 全球用户访问速度趋于一致
 - 缩略图功能可大幅提升图片加载速度
 
+<<<<<<< HEAD
+=======
+---
+
+## 十、部署结构
+>>>>>>> 3c966cac602cbd438ac21f90314b98436aeffd0f
 
 **部署注意**：
 - `uploads/` 目录需要从源站同步或挂载共享存储
