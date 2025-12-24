@@ -60,8 +60,8 @@ module.exports = {
       wait_ready: true,
       listen_timeout: 10000,
 
-      // Cron 重启（可选，每天凌晨 3 点重启）
-      // cron_restart: '0 3 * * *',
+      // Cron 重启（可选，每天凌晨 X 点重启）
+      // cron_restart: '0 X * * *',
 
       // 异常处理
       exp_backoff_restart_delay: 100,
