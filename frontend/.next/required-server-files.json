@@ -225,7 +225,6 @@
       "mcpServer": true,
       "optimizePackageImports": [
         "lucide-react",
-        "framer-motion",
         "date-fns",
         "lodash-es",
         "ramda",

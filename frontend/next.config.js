@@ -57,7 +57,7 @@ const nextConfig = {
   // 实验性优化配置
   experimental: {
     // 优化包导入，减少 bundle 大小
-    optimizePackageImports: ['lucide-react', 'framer-motion'],
+    optimizePackageImports: ['lucide-react'],
   },
   // 生产环境优化配置
   compiler: {
