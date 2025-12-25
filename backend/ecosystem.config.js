@@ -42,7 +42,7 @@ module.exports = {
       // ========================================
       autorestart: true,
       max_restarts: 5,           // 最多重启5次
-      min_uptime: '15s',         // 进程至少运行15秒才算正常启动
+      min_uptime: '10s',         // 进程至少运行10秒才算正常启动
       restart_delay: 5000,       // 重启间隔5秒
 
       // 监听文件变化（生产环境建议关闭）
