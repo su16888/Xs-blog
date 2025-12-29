@@ -254,11 +254,3 @@ nginx -t
 ```
 
 如果显示 `syntax is ok` 和 `test is successful`，说明配置正确。
-
----
-
-## 📚 相关文档
-
-- [Nginx缓存配置指南.md](Nginx缓存配置指南.md) - 详细缓存配置方案
-- [CDN缓存配置建议.md](CDN缓存配置建议.md) - CDN缓存优化建议
-- [环境变量配置指南.md](/环境变量配置指南.md) - 环境变量配置说明

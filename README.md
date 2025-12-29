@@ -3,12 +3,11 @@
 # Xs-blog - 现代化个人主页系统
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.3.0-blue)](https://github.com/su16888/Xs-blog)
+[![Version](https://img.shields.io/badge/version-3.5.0-blue)](https://github.com/su16888/Xs-blog)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![MySQL Version](https://img.shields.io/badge/mysql-%3E%3D5.6-orange)](https://www.mysql.com/)
 [![SQLite Version](https://img.shields.io/badge/sqlite-%3E%3D3.0-blue)](https://www.sqlite.org/)
 [![PostgreSQL Version](https://img.shields.io/badge/postgresql-%3E%3D12-blue)](https://www.postgresql.org/)
-
 
 [快速部署](docs/快速部署指南.md) | [功能特性](docs/功能特性.md) | [详细部署指南](docs/部署指南.md) | [常见问题](docs/常见问题解决方案.md)
 
@@ -18,7 +17,7 @@
 
 ## 📖 项目简介
 
-**Xs-blog V3.3.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
+**Xs-blog V3.5.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
 
 ### 🌟 为什么选择 Xs-blog？
 

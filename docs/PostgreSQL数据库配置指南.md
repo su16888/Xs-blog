@@ -451,18 +451,3 @@ mysqldump -u root -p --single-transaction xsblog888 > mysql_data.sql
 # 可能需要使用迁移工具或自定义脚本
 # 常用工具：pgloader, ora2pg 等
 ```
-
----
-
-## 📚 相关文档
-
-- [PostgreSQL 官方文档](https://www.postgresql.org/docs/)
-- [Xs-Blog 部署指南](./部署指南.md)
-- [Xs-Blog 环境变量配置指南](./环境变量配置指南.md)
-- [Xs-Blog 常见问题解决方案](./常见问题解决方案.md)
-
----
-
-**版本**: V3.3.0正式版
-**更新日期**: 2025-12-17
-**文档状态**: ✅ 基于实际项目功能，生产就绪
