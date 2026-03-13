@@ -1,0 +1,603 @@
+/* ========================================
+   Promo Page Isolated Styles
+   Clean, Minimal, Professional Design
+   ======================================== */
+
+/* ========================================
+   CSS Variables & Theme System
+   ======================================== */
+
+.promo-page-root {
+  /* Typography */
+  --promo-font-sans: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --promo-font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  --promo-font-display: 'Noto Serif SC', 'Noto Serif', 'Source Han Serif SC', 'Songti SC', ui-serif, serif;
+
+  /* Timing */
+  --promo-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --promo-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --promo-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --promo-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --promo-duration-fast: 150ms;
+  --promo-duration-normal: 280ms;
+  --promo-duration-slow: 450ms;
+  --promo-duration-slower: 600ms;
+
+  /* Light Mode Colors - 更丰富的层次 */
+  --promo-bg-primary: #fafafa;
+  --promo-bg-secondary: #f5f5f5;
+  --promo-bg-tertiary: #ffffff;
+  --promo-bg-card: #ffffff;
+  --promo-text-primary: #171717;
+  --promo-text-secondary: #525252;
+  --promo-text-tertiary: #a3a3a3;
+  --promo-text-muted: #d4d4d4;
+  --promo-border: #e5e5e5;
+  --promo-border-hover: #d4d4d4;
+  --promo-accent-amber: #d97706;
+  --promo-accent-rose: #e11d48;
+  --promo-accent-sky: #0284c7;
+  --promo-accent-emerald: #059669;
+  --promo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --promo-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --promo-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.12);
+  --promo-shadow-glow: 0 0 40px rgba(217, 119, 6, 0.15);
+
+  font-family: var(--promo-font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Dark Mode Colors - 更丰富的层次 */
+.promo-page-root.dark {
+  --promo-bg-primary: #0a0a0a;
+  --promo-bg-secondary: #171717;
+  --promo-bg-tertiary: #1c1c1c;
+  --promo-bg-card: #141414;
+  --promo-text-primary: #fafafa;
+  --promo-text-secondary: #a3a3a3;
+  --promo-text-tertiary: #737373;
+  --promo-text-muted: #404040;
+  --promo-border: #262626;
+  --promo-border-hover: #404040;
+  --promo-accent-amber: #f59e0b;
+  --promo-accent-rose: #fb7185;
+  --promo-accent-sky: #38bdf8;
+  --promo-accent-emerald: #34d399;
+  --promo-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --promo-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --promo-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
+  --promo-shadow-glow: 0 0 60px rgba(245, 158, 11, 0.1);
+}
+
+/* ========================================
+   Typography
+   ======================================== */
+
+.promo-page-root h1,
+.promo-page-root h2,
+.promo-page-root h3,
+.promo-page-root h4 {
+  font-family: var(--promo-font-sans);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.promo-page-root .promo-title-display {
+  font-family: var(--promo-font-sans);
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.promo-page-root p {
+  line-height: 1.7;
+}
+
+/* ========================================
+   Background Effects
+   ======================================== */
+
+/* Subtle noise texture */
+.promo-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+.promo-page-root.dark .promo-noise {
+  opacity: 0.03;
+}
+
+/* ========================================
+   Motion System - Cards
+   ======================================== */
+
+.promo-motion-card {
+  transition:
+    transform var(--promo-duration-normal) var(--promo-ease-out),
+    box-shadow var(--promo-duration-normal) var(--promo-ease-out),
+    border-color var(--promo-duration-normal) var(--promo-ease-out),
+    background-color var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-motion-hover:hover {
+  transform: translateY(-4px);
+}
+
+/* ========================================
+   Motion System - Buttons
+   ======================================== */
+
+.promo-motion-btn {
+  transition:
+    transform var(--promo-duration-fast) var(--promo-ease-out),
+    background-color var(--promo-duration-fast) var(--promo-ease-out),
+    box-shadow var(--promo-duration-fast) var(--promo-ease-out),
+    color var(--promo-duration-fast) var(--promo-ease-out),
+    border-color var(--promo-duration-fast) var(--promo-ease-out);
+}
+
+.promo-motion-btn:active {
+  transform: scale(0.97);
+}
+
+/* ========================================
+   Motion System - Links
+   ======================================== */
+
+.promo-motion-link {
+  position: relative;
+  transition: color var(--promo-duration-fast) var(--promo-ease-out);
+}
+
+.promo-motion-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background-color: var(--promo-accent-amber);
+  transition: width var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-motion-link:hover::after {
+  width: 100%;
+}
+
+/* ========================================
+   Motion System - Inputs
+   ======================================== */
+
+.promo-motion-input {
+  transition:
+    border-color var(--promo-duration-fast) var(--promo-ease-out),
+    box-shadow var(--promo-duration-fast) var(--promo-ease-out),
+    background-color var(--promo-duration-fast) var(--promo-ease-out);
+}
+
+.promo-motion-input:focus {
+  outline: none;
+  box-shadow: none !important;
+  ring: none;
+}
+
+/* Remove browser autofill yellow background */
+.promo-page-root input:-webkit-autofill,
+.promo-page-root input:-webkit-autofill:hover,
+.promo-page-root input:-webkit-autofill:focus,
+.promo-page-root input:-webkit-autofill:active,
+.promo-page-root textarea:-webkit-autofill,
+.promo-page-root textarea:-webkit-autofill:hover,
+.promo-page-root textarea:-webkit-autofill:focus,
+.promo-page-root textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--promo-bg-card) inset !important;
+  -webkit-text-fill-color: var(--promo-text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.promo-page-root.dark input:-webkit-autofill,
+.promo-page-root.dark input:-webkit-autofill:hover,
+.promo-page-root.dark input:-webkit-autofill:focus,
+.promo-page-root.dark input:-webkit-autofill:active,
+.promo-page-root.dark textarea:-webkit-autofill,
+.promo-page-root.dark textarea:-webkit-autofill:hover,
+.promo-page-root.dark textarea:-webkit-autofill:focus,
+.promo-page-root.dark textarea:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #1c1917 inset !important;
+  -webkit-text-fill-color: #fafaf9 !important;
+}
+
+/* ========================================
+   Entrance Animations
+   ======================================== */
+
+@keyframes promo-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes promo-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes promo-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes promo-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes promo-blur-in {
+  from {
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes promo-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes promo-slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes promo-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes promo-pulse-glow {
+  0%, 100% {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes promo-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.promo-motion-fade {
+  animation: promo-fade-in var(--promo-duration-slow) var(--promo-ease-out) forwards;
+}
+
+.promo-motion-rise {
+  animation: promo-slide-up var(--promo-duration-slower) var(--promo-ease-out) forwards;
+}
+
+.promo-motion-drop {
+  animation: promo-slide-down var(--promo-duration-slow) var(--promo-ease-out) forwards;
+}
+
+.promo-motion-pop {
+  animation: promo-scale-in var(--promo-duration-normal) var(--promo-ease-spring) forwards;
+}
+
+.promo-motion-blur {
+  animation: promo-blur-in var(--promo-duration-slower) var(--promo-ease-out) forwards;
+}
+
+.promo-motion-float {
+  animation: promo-float 4s ease-in-out infinite;
+}
+
+/* Stagger delays */
+.promo-delay-1 { animation-delay: 100ms; }
+.promo-delay-2 { animation-delay: 200ms; }
+.promo-delay-3 { animation-delay: 300ms; }
+.promo-delay-4 { animation-delay: 400ms; }
+.promo-delay-5 { animation-delay: 500ms; }
+
+/* ========================================
+   Scroll Progress Bar
+   ======================================== */
+
+.promo-progress-bar {
+  transform-origin: left;
+  will-change: transform;
+}
+
+/* ========================================
+   Scrollbar Styling
+   ======================================== */
+
+.promo-page-root::-webkit-scrollbar {
+  width: 6px;
+}
+
+.promo-page-root::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.promo-page-root::-webkit-scrollbar-thumb {
+  background-color: var(--promo-border);
+  border-radius: 3px;
+}
+
+.promo-page-root::-webkit-scrollbar-thumb:hover {
+  background-color: var(--promo-border-hover);
+}
+
+/* ========================================
+   Selection Styling
+   ======================================== */
+
+.promo-page-root ::selection {
+  background-color: rgba(217, 119, 6, 0.2);
+  color: inherit;
+}
+
+.promo-page-root.dark ::selection {
+  background-color: rgba(245, 158, 11, 0.3);
+}
+
+/* ========================================
+   Reduced Motion
+   ======================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  .promo-page-root *,
+  .promo-page-root *::before,
+  .promo-page-root *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ========================================
+   Focus Visible
+   ======================================== */
+
+.promo-page-root *:focus-visible {
+  outline: 2px solid var(--promo-accent-amber);
+  outline-offset: 2px;
+}
+
+/* ========================================
+   Utility Classes
+   ======================================== */
+
+.promo-text-balance {
+  text-wrap: balance;
+}
+
+.promo-gradient-text {
+  background: linear-gradient(135deg, var(--promo-text-primary) 0%, var(--promo-text-secondary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shimmer effect for loading states */
+.promo-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: promo-shimmer 2s infinite;
+}
+
+/* Glow effect on hover */
+.promo-glow-hover {
+  transition: box-shadow var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-glow-hover:hover {
+  box-shadow: var(--promo-shadow-glow);
+}
+
+/* ========================================
+   Card Hover Effects
+   ======================================== */
+
+.promo-card-lift {
+  transition:
+    transform var(--promo-duration-normal) var(--promo-ease-out),
+    box-shadow var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: var(--promo-shadow-lg);
+}
+
+/* ========================================
+   Text Gradient Accents
+   ======================================== */
+
+.promo-text-gradient-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.promo-text-gradient-rose {
+  background: linear-gradient(135deg, #fb7185 0%, #e11d48 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.promo-text-gradient-sky {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.promo-text-gradient-emerald {
+  background: linear-gradient(135deg, #34d399 0%, #059669 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ========================================
+   Border Gradient
+   ======================================== */
+
+.promo-border-gradient {
+  position: relative;
+}
+
+.promo-border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, var(--promo-accent-amber), var(--promo-accent-rose));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-border-gradient:hover::before {
+  opacity: 1;
+}
+
+.promo-feature-card {
+  box-shadow: var(--promo-shadow-sm);
+  transform: translateZ(0);
+}
+
+.promo-feature-icon {
+  transition:
+    transform var(--promo-duration-normal) var(--promo-ease-out),
+    background-color var(--promo-duration-normal) var(--promo-ease-out),
+    box-shadow var(--promo-duration-normal) var(--promo-ease-out),
+    filter var(--promo-duration-normal) var(--promo-ease-out);
+}
+
+.promo-feature-card:hover .promo-feature-icon {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.10);
+}
+
+.promo-page-root.dark .promo-feature-card:hover .promo-feature-icon {
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+.promo-feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--promo-duration-normal) var(--promo-ease-out);
+  background:
+    radial-gradient(800px 300px at 20% 0%, rgba(245, 158, 11, 0.14), transparent 55%),
+    radial-gradient(700px 260px at 100% 100%, rgba(56, 189, 248, 0.10), transparent 55%);
+}
+
+.promo-page-root.dark .promo-feature-card::after {
+  background:
+    radial-gradient(900px 340px at 20% 0%, rgba(245, 158, 11, 0.10), transparent 60%),
+    radial-gradient(820px 300px at 100% 100%, rgba(56, 189, 248, 0.08), transparent 60%);
+}
+
+.promo-feature-card:hover::after {
+  opacity: 1;
+}
+
+.promo-feature-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--promo-duration-normal) var(--promo-ease-out);
+  background:
+    radial-gradient(520px 240px at var(--promo-mx, 50%) var(--promo-my, 45%),
+      color-mix(in srgb, var(--promo-card-accent, #f59e0b) 18%, transparent),
+      transparent 62%);
+}
+
+.promo-page-root.dark .promo-feature-card::before {
+  background:
+    radial-gradient(560px 260px at var(--promo-mx, 50%) var(--promo-my, 45%),
+      color-mix(in srgb, var(--promo-card-accent, #f59e0b) 14%, transparent),
+      transparent 64%);
+}
+
+.promo-feature-card:hover::before {
+  opacity: 1;
+}
+
+.promo-line-clamp-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}

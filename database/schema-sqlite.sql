@@ -5,17 +5,9 @@
 -- ========================================
 -- 版本: 3.9.0
 -- 创建日期: 2025-11-24
--- 更新日期: 2025-12-16
+-- 更新日期: 2025-01-29
 -- 数据库: SQLite 3
 -- 字符集: UTF-8
--- ========================================
--- 更新日志:
--- v3.9.0 (2025-12-16): 新增页面文本配置表 page_texts，将页面文本配置从 settings 表迁移到独立表
--- v3.8.0 (2025-12-16): 网站导航展示类型改为三选项（前台/后台/前后台），移除后台首页显示字段
--- v3.7.0 (2025-12-15): 新增页面访问统计功能 - 支持仪表盘访问趋势、模块统计、IP排行
--- v3.5.0 (2025-12-01): 新增朋友圈功能 - 支持动态发布、图片展示、个人资料设置
--- v3.4.0 (2025-11-29): 新增页面访问控制功能 - 支持/user、/blog、/promo页面访问权限控制
--- v3.1.0 (2025-11-24): SQLite 版本初始化，包含性能优化索引
 -- ========================================
 
 -- 启用外键约束
@@ -148,6 +140,7 @@ CREATE INDEX IF NOT EXISTS idx_categories_parent_id ON categories(parent_id);
 -- ========================================
 CREATE TABLE IF NOT EXISTS notes (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
+  custom_slug TEXT UNIQUE,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
   summary TEXT,
@@ -207,6 +200,267 @@ CREATE TABLE IF NOT EXISTS note_disks (
 
 CREATE INDEX IF NOT EXISTS idx_note_disks_note_id ON note_disks(note_id);
 CREATE INDEX IF NOT EXISTS idx_note_disks_sort_order ON note_disks(sort_order);
+
+-- ========================================
+-- 7.2 笔记投票表及相关表 (note_polls, note_poll_options, note_poll_votes)
+-- 来源：database/migrations/update_note_features_sqlite.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_polls (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  poll_type TEXT NOT NULL DEFAULT 'single',
+  max_choices INTEGER DEFAULT 1,
+  start_time TEXT,
+  end_time TEXT,
+  result_visibility TEXT NOT NULL DEFAULT 'before',
+  allow_revote INTEGER DEFAULT 0,
+  ip_limit INTEGER DEFAULT 1,
+  redirect_url TEXT,
+  is_active INTEGER DEFAULT 1,
+  total_votes INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CHECK (poll_type IN ('single', 'multiple')),
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin')),
+  CHECK (max_choices > 0),
+  CHECK (ip_limit > 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_polls_note_id ON note_polls(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_polls_is_active ON note_polls(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_polls_end_time ON note_polls(end_time);
+
+CREATE TRIGGER IF NOT EXISTS update_note_polls_updated_at
+AFTER UPDATE ON note_polls
+BEGIN
+  UPDATE note_polls SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_poll_options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id INTEGER NOT NULL,
+  option_text TEXT NOT NULL,
+  option_image TEXT,
+  sort_order INTEGER DEFAULT 0,
+  vote_count INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_poll_options_poll_id ON note_poll_options(poll_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_options_sort_order ON note_poll_options(sort_order);
+
+CREATE TRIGGER IF NOT EXISTS update_note_poll_options_updated_at
+AFTER UPDATE ON note_poll_options
+BEGIN
+  UPDATE note_poll_options SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_poll_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  poll_id INTEGER NOT NULL,
+  option_id INTEGER NOT NULL,
+  voter_ip TEXT NOT NULL,
+  voter_fingerprint TEXT,
+  user_agent TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES note_poll_options(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_poll_id ON note_poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_option_id ON note_poll_votes(option_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_voter_ip ON note_poll_votes(voter_ip);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_poll_ip ON note_poll_votes(poll_id, voter_ip);
+
+-- ========================================
+-- 7.3 笔记问卷表及相关表 (note_surveys, note_survey_*)
+-- 来源：database/migrations/update_note_features_sqlite.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_surveys (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  start_time TEXT,
+  end_time TEXT,
+  ip_limit INTEGER DEFAULT 1,
+  allow_resubmit INTEGER DEFAULT 0,
+  result_visibility TEXT NOT NULL DEFAULT 'before',
+  redirect_url TEXT,
+  is_active INTEGER DEFAULT 1,
+  total_submissions INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CHECK (ip_limit > 0),
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_surveys_note_id ON note_surveys(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_surveys_is_active ON note_surveys(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_surveys_end_time ON note_surveys(end_time);
+
+CREATE TRIGGER IF NOT EXISTS update_note_surveys_updated_at
+AFTER UPDATE ON note_surveys
+BEGIN
+  UPDATE note_surveys SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_survey_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  survey_id INTEGER NOT NULL,
+  question_type TEXT NOT NULL,
+  question_title TEXT NOT NULL,
+  question_description TEXT,
+  question_image TEXT,
+  is_required INTEGER DEFAULT 0,
+  sort_order INTEGER DEFAULT 0,
+  config TEXT DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE,
+  CHECK (question_type IN ('text', 'textarea', 'radio', 'checkbox', 'file', 'rating', 'date', 'time'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_questions_survey_id ON note_survey_questions(survey_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_questions_sort_order ON note_survey_questions(sort_order);
+
+CREATE TRIGGER IF NOT EXISTS update_note_survey_questions_updated_at
+AFTER UPDATE ON note_survey_questions
+BEGIN
+  UPDATE note_survey_questions SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_survey_question_options (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL,
+  option_text TEXT NOT NULL,
+  option_image TEXT,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_question_options_question_id ON note_survey_question_options(question_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_question_options_sort_order ON note_survey_question_options(sort_order);
+
+CREATE TRIGGER IF NOT EXISTS update_note_survey_question_options_updated_at
+AFTER UPDATE ON note_survey_question_options
+BEGIN
+  UPDATE note_survey_question_options SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_survey_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  survey_id INTEGER NOT NULL,
+  submitter_ip TEXT NOT NULL,
+  user_agent TEXT,
+  submitted_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_survey_id ON note_survey_submissions(survey_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_submitter_ip ON note_survey_submissions(submitter_ip);
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_survey_ip ON note_survey_submissions(survey_id, submitter_ip);
+
+CREATE TABLE IF NOT EXISTS note_survey_answers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  submission_id INTEGER NOT NULL,
+  question_id INTEGER NOT NULL,
+  answer_text TEXT,
+  answer_file TEXT,
+  selected_options TEXT DEFAULT '[]',
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (submission_id) REFERENCES note_survey_submissions(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_answers_submission_id ON note_survey_answers(submission_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_answers_question_id ON note_survey_answers(question_id);
+
+-- ========================================
+-- 7.4 笔记抽奖表及相关表 (note_lotteries, note_lottery_*)
+-- 来源：database/migrations/update_note_features_sqlite.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_lotteries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  note_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT,
+  draw_time TEXT NOT NULL,
+  ip_limit INTEGER DEFAULT 1,
+  enable_email_notification INTEGER DEFAULT 1,
+  custom_fields TEXT DEFAULT '[]',
+  show_prizes INTEGER DEFAULT 1,
+  show_probability INTEGER DEFAULT 1,
+  show_quantity INTEGER DEFAULT 1,
+  result_visibility TEXT NOT NULL DEFAULT 'before',
+  show_participants INTEGER DEFAULT 1,
+  draw_type TEXT DEFAULT 'manual',
+  redirect_url TEXT,
+  is_active INTEGER DEFAULT 1,
+  is_drawn INTEGER DEFAULT 0,
+  total_participants INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CHECK (ip_limit > 0),
+  CHECK (draw_type IN ('manual', 'auto')),
+  CHECK (result_visibility IN ('before', 'after', 'admin'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_note_id ON note_lotteries(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_is_active ON note_lotteries(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_draw_time ON note_lotteries(draw_time);
+
+CREATE TRIGGER IF NOT EXISTS update_note_lotteries_updated_at
+AFTER UPDATE ON note_lotteries
+BEGIN
+  UPDATE note_lotteries SET updated_at = datetime('now') WHERE id = NEW.id;
+END;
+
+CREATE TABLE IF NOT EXISTS note_lottery_prizes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lottery_id INTEGER NOT NULL,
+  prize_name TEXT NOT NULL,
+  prize_image TEXT,
+  prize_description TEXT,
+  probability REAL NOT NULL,
+  quantity INTEGER DEFAULT 1,
+  sort_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE,
+  CHECK (probability >= 0 AND probability <= 100),
+  CHECK (quantity >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lottery_prizes_lottery_id ON note_lottery_prizes(lottery_id);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_prizes_sort_order ON note_lottery_prizes(sort_order);
+
+CREATE TABLE IF NOT EXISTS note_lottery_entries (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  lottery_id INTEGER NOT NULL,
+  participant_ip TEXT NOT NULL,
+  participant_email TEXT,
+  custom_data TEXT DEFAULT '{}',
+  prize_id INTEGER,
+  is_winner INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now')),
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE,
+  FOREIGN KEY (prize_id) REFERENCES note_lottery_prizes(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_lottery_id ON note_lottery_entries(lottery_id);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_participant_ip ON note_lottery_entries(participant_ip);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_lottery_ip ON note_lottery_entries(lottery_id, participant_ip);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_is_winner ON note_lottery_entries(is_winner);
+
 
 -- ========================================
 -- 8. 便签表 (sticky_notes)
@@ -543,6 +797,7 @@ CREATE TABLE IF NOT EXISTS services (
   name VARCHAR(200) NOT NULL, -- 服务名称
   description TEXT DEFAULT NULL, -- 服务简述
   content TEXT DEFAULT NULL, -- 服务详情介绍（Markdown格式）
+  content_format TEXT DEFAULT 'markdown', -- 服务详情格式（text/markdown/html）
   cover_image VARCHAR(500) DEFAULT NULL, -- 服务封面图（1:1正方形）
   price VARCHAR(100) DEFAULT NULL, -- 价格（文本格式，可包含非数字）
   category_id INTEGER DEFAULT NULL, -- 分类ID（关联service_categories表）
@@ -553,6 +808,13 @@ CREATE TABLE IF NOT EXISTS services (
   order_button_text VARCHAR(50) DEFAULT '立即下单', -- 下单按钮文字
   order_button_url VARCHAR(500) DEFAULT NULL, -- 下单按钮跳转URL
   spec_title VARCHAR(50) DEFAULT '服务规格', -- 服务规格标题（可自定义）
+  product_type TEXT DEFAULT 'virtual', -- 商品类型：card/virtual/physical
+  stock_total INTEGER DEFAULT 0, -- 库存总量
+  stock_sold INTEGER DEFAULT 0, -- 已售数量
+  show_stock INTEGER DEFAULT 1, -- 是否展示库存
+  show_sales INTEGER DEFAULT 1, -- 是否展示销量
+  payment_config_id INTEGER DEFAULT NULL, -- 绑定支付配置ID
+  order_page_slug TEXT DEFAULT NULL, -- 下单页路径
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (category_id) REFERENCES service_categories(id) ON DELETE SET NULL ON UPDATE CASCADE
@@ -562,6 +824,8 @@ CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
 CREATE INDEX IF NOT EXISTS idx_services_is_visible ON services(is_visible);
 CREATE INDEX IF NOT EXISTS idx_services_is_recommended ON services(is_recommended);
 CREATE INDEX IF NOT EXISTS idx_services_sort_order ON services(sort_order);
+CREATE INDEX IF NOT EXISTS idx_services_payment_config_id ON services(payment_config_id);
+CREATE INDEX IF NOT EXISTS idx_services_list_order ON services(is_recommended DESC, sort_order ASC);
 
 -- ========================================
 -- 21. 服务规格表 (service_specifications)
@@ -580,6 +844,89 @@ CREATE TABLE IF NOT EXISTS service_specifications (
 CREATE INDEX IF NOT EXISTS idx_service_specifications_service_id ON service_specifications(service_id);
 CREATE INDEX IF NOT EXISTS idx_service_specifications_sort_order ON service_specifications(sort_order);
 
+-- ========================================
+-- 22. 支付配置表 (payment_configs)
+-- ========================================
+CREATE TABLE IF NOT EXISTS payment_configs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  provider_key TEXT NOT NULL,
+  provider_type TEXT,
+  is_enabled INTEGER DEFAULT 1,
+  sort_order INTEGER DEFAULT 0,
+  remark TEXT,
+  config_json TEXT,
+  display_logo TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_configs_is_enabled ON payment_configs(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_payment_configs_sort_order ON payment_configs(sort_order);
+
+-- ========================================
+-- 23. 订单表 (orders)
+-- ========================================
+CREATE TABLE IF NOT EXISTS orders (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id INTEGER NOT NULL,
+  amount REAL NOT NULL DEFAULT 0.00,
+  status TEXT DEFAULT 'pending',
+  buyer_name TEXT,
+  buyer_contact TEXT,
+  buyer_email TEXT,
+  buyer_phone TEXT,
+  buyer_address TEXT,
+  payment_config_id INTEGER,
+  payment_gateway TEXT,
+  payment_trade_no TEXT,
+  payment_provider_order_id TEXT,
+  payment_url TEXT,
+  payment_status TEXT DEFAULT 'unpaid',
+  paid_at TEXT,
+  payment_meta TEXT,
+  ip_address TEXT,
+  user_agent TEXT,
+  cancel_reason TEXT,
+  shipping_status TEXT,
+  tracking_no TEXT,
+  shipped_at TEXT,
+  expired_at TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+  FOREIGN KEY (payment_config_id) REFERENCES payment_configs(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_service_id ON orders(service_id);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_config_id ON orders(payment_config_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_shipping_status ON orders(shipping_status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_trade_no ON orders(payment_trade_no);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_gateway ON orders(payment_gateway);
+CREATE INDEX IF NOT EXISTS idx_orders_paid_at ON orders(paid_at);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+
+-- ========================================
+-- 24. 卡密表 (cards)
+-- ========================================
+CREATE TABLE IF NOT EXISTS cards (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  service_id INTEGER NOT NULL,
+  card_code TEXT NOT NULL,
+  card_status TEXT DEFAULT 'unused',
+  bind_order_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE,
+  FOREIGN KEY (bind_order_id) REFERENCES orders(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_cards_service_id ON cards(service_id);
+CREATE INDEX IF NOT EXISTS idx_cards_bind_order_id ON cards(bind_order_id);
+CREATE INDEX IF NOT EXISTS idx_cards_card_status ON cards(card_status);
+
 -- 服务表更新触发器（用于自动更新updated_at字段）
 CREATE TRIGGER IF NOT EXISTS update_service_categories_timestamp
 AFTER UPDATE ON service_categories
@@ -597,6 +944,24 @@ CREATE TRIGGER IF NOT EXISTS update_service_specifications_timestamp
 AFTER UPDATE ON service_specifications
 BEGIN
   UPDATE service_specifications SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS update_payment_configs_timestamp
+AFTER UPDATE ON payment_configs
+BEGIN
+  UPDATE payment_configs SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS update_orders_timestamp
+AFTER UPDATE ON orders
+BEGIN
+  UPDATE orders SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS update_cards_timestamp
+AFTER UPDATE ON cards
+BEGIN
+  UPDATE cards SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
 END;
 
 -- ========================================

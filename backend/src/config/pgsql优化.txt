@@ -1,0 +1,81 @@
+创建文件 backend/src/config/postgres-config.js：
+
+function configurePostgres(sequelize) {
+  if (sequelize.options.dialect === 'postgres') {
+    // 设置搜索路径
+    sequelize.query('SET search_path TO public;');
+
+    // 设置时区
+    sequelize.query("SET timezone = 'Asia/Shanghai';");
+
+    // 优化查询计划器
+    sequelize.query('SET random_page_cost = 1.1;'); // SSD 优化
+    sequelize.query('SET effective_cache_size = \'256MB\';');
+
+    // 设置工作内存（用于排序和哈希操作）
+    sequelize.query('SET work_mem = \'16MB\';');
+
+    // 设置维护工作内存（用于 VACUUM、CREATE INDEX 等）
+    sequelize.query('SET maintenance_work_mem = \'64MB\';');
+  }
+}
+
+module.exports = configurePostgres;
+
+在 backend/src/config/database.js 中使用：
+
+const configurePostgres = require('./postgres-config');
+
+// 测试数据库连接后配置
+const testConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    configurePostgres(sequelize); // 添加这行
+    console.log('✅ Database connection established successfully.');
+  } catch (error) {
+    console.error('❌ Unable to connect to the database:', error);
+    process.exit(1);
+  }
+};
+
+Sequelize 连接池配置（在 database.js 中）：
+
+const sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
+  host: DB_HOST,
+  port: DB_PORT,
+  dialect: 'postgres',
+  logging: false,
+  pool: {
+    max: 20,        // 最大连接数
+    min: 5,         // 最小连接数
+    acquire: 30000, // 获取连接超时时间（毫秒）
+    idle: 10000     // 连接空闲超时时间（毫秒）
+  },
+  dialectOptions: {
+    // 语句超时（毫秒）
+    statement_timeout: 30000,
+    // 查询超时（毫秒）
+    query_timeout: 30000,
+    // SSL 配置（生产环境可能需要）
+    // ssl: { rejectUnauthorized: false }
+  }
+});
+
+PostgreSQL 服务端优化（postgresql.conf）：
+
+# 内存配置
+shared_buffers = 256MB              # 共享缓冲区（建议为系统内存的 25%）
+effective_cache_size = 768MB        # 有效缓存大小（建议为系统内存的 75%）
+work_mem = 16MB                     # 每个操作的工作内存
+maintenance_work_mem = 64MB         # 维护操作内存
+
+# WAL 配置
+wal_buffers = 16MB                  # WAL 缓冲区
+checkpoint_completion_target = 0.9  # 检查点完成目标
+
+# 查询优化
+random_page_cost = 1.1              # SSD 优化（HDD 用 4.0）
+effective_io_concurrency = 200      # SSD 优化（HDD 用 2）
+
+# 连接配置
+max_connections = 100               # 最大连接数

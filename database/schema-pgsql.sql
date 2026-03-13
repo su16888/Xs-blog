@@ -5,34 +5,9 @@
 -- ========================================
 -- 版本: 3.9.0
 -- 创建日期: 2025-10-31
--- 更新日期: 2025-12-19
+-- 更新日期: 2025-01-29
 -- 数据库: PostgreSQL 12+
 -- 字符集: UTF-8
--- ========================================
--- 更新日志:
--- v3.8.0 (2025-12-16): 网站导航展示类型改为三选项（前台/后台/前后台），移除后台首页显示字段
--- v3.7.0 (2025-12-15): 新增页面访问统计功能 - 支持仪表盘访问趋势、模块统计、IP排行
--- v3.5.0 (2025-12-01): 新增朋友圈功能 - 支持动态发布、图片展示、个人资料设置，官网主题与朋友圈主题模式互斥
--- v3.4.0 (2025-11-29): 新增页面访问控制功能 - 支持/user、/blog、/promo页面访问权限控制
--- v3.3.0 (2025-11-25): 新增服务业务功能 - 支持服务展示、分类管理、规格配置
--- v3.2.0 (2025-11-25): 新增图库功能 - 支持图册分类、图片管理、密码保护、拖拽排序
--- v3.1.0 (2025-11-24): 性能优化 - 新增组合索引提升查询性能80%+
--- v3.0.5 (2025-11-19): 新增网站导航后台首页显示功能，支持在后台首页展示常用导航（最多6个）
--- v3.0.4 (2025-11-19): 新增笔记来源类型功能，支持原创/转载标识和文章来源信息
--- v1.0.3 (2024-11-10): 新增笔记网盘资源功能，支持多网盘管理和轮播展示
--- v1.0.2 (2024-11-10): 新增笔记列表展示控制功能（show_in_list字段）
--- v1.0.0 (2024-11-10): 新增导航分类管理系统，支持分类展示和推荐功能
--- v0.9.0 (2025-11-17): 社交链接功能增强
--- v0.8.0 (2025-11-16): 新增笔记摘要和密码保护功能
--- v0.7.0 (2025-11-15): 新增笔记独立页面功能，支持页面/窗口展示模式切换
--- v0.6.0 (2024-11-07): 待办事项新增时间点记录功能，支持工作日志管理
--- v0.5.0 (2024-11-07): 待办事项新增项目进度管理功能（进度、优先级、状态、工时等）
--- v2.4.0 (2024-11-07): 前端配置改为通过后端API动态获取，移除config.js
--- v2.3.0 (2024-11-07): 后台路径配置移至后端，提升安全性
--- v0.1.0 (2024-11-05): 新增留言系统，支持分类、验证码、IP频率限制
--- v0.0.1 (2025-11-04): 重构标签和分类系统，优化数据结构
--- v1.1.0 (2025-11-03): 新增便签分类功能、完善待办事项提醒功能
--- v1.0.0 (2025-10-31): 初始版本 - 基础功能
 -- ========================================
 
 -- 创建数据库（在 psql 中执行，或通过管理工具创建）
@@ -291,6 +266,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS notes (
   id SERIAL PRIMARY KEY,
+  custom_slug VARCHAR(200) UNIQUE,
   title VARCHAR(200) NOT NULL,
   content TEXT NOT NULL,
   summary TEXT DEFAULT NULL,
@@ -324,6 +300,7 @@ CREATE INDEX IF NOT EXISTS idx_notes_published_at ON notes(published_at);
 CREATE INDEX IF NOT EXISTS idx_notes_sort_order ON notes(sort_order);
 CREATE INDEX IF NOT EXISTS idx_notes_source_type ON notes(source_type);
 CREATE INDEX IF NOT EXISTS idx_notes_display_mode ON notes(display_mode);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_custom_slug ON notes(custom_slug);
 
 DROP TRIGGER IF EXISTS update_notes_updated_at ON notes;
 CREATE TRIGGER update_notes_updated_at BEFORE UPDATE ON notes
@@ -382,6 +359,291 @@ COMMENT ON COLUMN note_disks.file_size IS '文件大小';
 COMMENT ON COLUMN note_disks.extract_code IS '提取码';
 COMMENT ON COLUMN note_disks.download_url IS '下载链接';
 COMMENT ON COLUMN note_disks.sort_order IS '排序';
+
+-- ========================================
+-- 7.2 笔记投票表及相关表 (note_polls, note_poll_options, note_poll_votes)
+-- 来源：database/migrations/update_note_features_pgsql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_polls (
+  id SERIAL PRIMARY KEY,
+  note_id INTEGER NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  poll_type VARCHAR(20) NOT NULL DEFAULT 'single',
+  max_choices INTEGER DEFAULT 1,
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before',
+  show_participants BOOLEAN DEFAULT TRUE,
+  allow_revote BOOLEAN DEFAULT FALSE,
+  ip_limit INTEGER DEFAULT 1,
+  redirect_url VARCHAR(255),
+  is_active BOOLEAN DEFAULT TRUE,
+  total_votes INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_polls_note_id ON note_polls(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_polls_is_active ON note_polls(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_polls_end_time ON note_polls(end_time);
+
+DROP TRIGGER IF EXISTS update_note_polls_updated_at ON note_polls;
+CREATE TRIGGER update_note_polls_updated_at BEFORE UPDATE ON note_polls
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE note_polls ADD CONSTRAINT IF NOT EXISTS check_poll_type
+  CHECK (poll_type IN ('single', 'multiple'));
+ALTER TABLE note_polls ADD CONSTRAINT IF NOT EXISTS check_result_visibility
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin'));
+ALTER TABLE note_polls ADD CONSTRAINT IF NOT EXISTS check_max_choices
+  CHECK (max_choices > 0);
+ALTER TABLE note_polls ADD CONSTRAINT IF NOT EXISTS check_ip_limit
+  CHECK (ip_limit > 0);
+
+COMMENT ON TABLE note_polls IS '笔记投票主表';
+
+CREATE TABLE IF NOT EXISTS note_poll_options (
+  id SERIAL PRIMARY KEY,
+  poll_id INTEGER NOT NULL,
+  option_text VARCHAR(500) NOT NULL,
+  option_image VARCHAR(500),
+  sort_order INTEGER DEFAULT 0,
+  vote_count INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_poll_options_poll_id ON note_poll_options(poll_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_options_sort_order ON note_poll_options(sort_order);
+
+DROP TRIGGER IF EXISTS update_note_poll_options_updated_at ON note_poll_options;
+CREATE TRIGGER update_note_poll_options_updated_at BEFORE UPDATE ON note_poll_options
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE note_poll_options IS '投票选项表';
+
+CREATE TABLE IF NOT EXISTS note_poll_votes (
+  id SERIAL PRIMARY KEY,
+  poll_id INTEGER NOT NULL,
+  option_id INTEGER NOT NULL,
+  voter_ip VARCHAR(100) NOT NULL,
+  voter_fingerprint VARCHAR(255),
+  user_agent TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES note_poll_options(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_poll_id ON note_poll_votes(poll_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_option_id ON note_poll_votes(option_id);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_voter_ip ON note_poll_votes(voter_ip);
+CREATE INDEX IF NOT EXISTS idx_note_poll_votes_poll_ip ON note_poll_votes(poll_id, voter_ip);
+
+COMMENT ON TABLE note_poll_votes IS '投票记录表';
+
+-- ========================================
+-- 7.3 笔记问卷表及相关表 (note_surveys, note_survey_*)
+-- 来源：database/migrations/update_note_features_pgsql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_surveys (
+  id SERIAL PRIMARY KEY,
+  note_id INTEGER NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  start_time TIMESTAMP,
+  end_time TIMESTAMP,
+  ip_limit INTEGER DEFAULT 1,
+  allow_resubmit BOOLEAN DEFAULT FALSE,
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before',
+  show_participants BOOLEAN DEFAULT TRUE,
+  redirect_url VARCHAR(255),
+  is_active BOOLEAN DEFAULT TRUE,
+  total_submissions INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_surveys_note_id ON note_surveys(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_surveys_is_active ON note_surveys(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_surveys_end_time ON note_surveys(end_time);
+
+DROP TRIGGER IF EXISTS update_note_surveys_updated_at ON note_surveys;
+CREATE TRIGGER update_note_surveys_updated_at BEFORE UPDATE ON note_surveys
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE note_surveys ADD CONSTRAINT IF NOT EXISTS check_survey_ip_limit
+  CHECK (ip_limit > 0);
+ALTER TABLE note_surveys ADD CONSTRAINT IF NOT EXISTS check_survey_result_visibility
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin'));
+
+COMMENT ON TABLE note_surveys IS '笔记问卷主表';
+
+CREATE TABLE IF NOT EXISTS note_survey_questions (
+  id SERIAL PRIMARY KEY,
+  survey_id INTEGER NOT NULL,
+  question_type VARCHAR(20) NOT NULL,
+  question_title VARCHAR(500) NOT NULL,
+  question_description TEXT,
+  question_image VARCHAR(500),
+  is_required BOOLEAN DEFAULT FALSE,
+  sort_order INTEGER DEFAULT 0,
+  config JSONB DEFAULT '{}',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_questions_survey_id ON note_survey_questions(survey_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_questions_sort_order ON note_survey_questions(sort_order);
+
+DROP TRIGGER IF EXISTS update_note_survey_questions_updated_at ON note_survey_questions;
+CREATE TRIGGER update_note_survey_questions_updated_at BEFORE UPDATE ON note_survey_questions
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE note_survey_questions ADD CONSTRAINT IF NOT EXISTS check_question_type
+  CHECK (question_type IN ('text', 'textarea', 'radio', 'checkbox', 'file', 'rating', 'date', 'time'));
+
+COMMENT ON TABLE note_survey_questions IS '问卷题目表';
+
+CREATE TABLE IF NOT EXISTS note_survey_question_options (
+  id SERIAL PRIMARY KEY,
+  question_id INTEGER NOT NULL,
+  option_text VARCHAR(500) NOT NULL,
+  option_image VARCHAR(500),
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_question_options_question_id ON note_survey_question_options(question_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_question_options_sort_order ON note_survey_question_options(sort_order);
+
+DROP TRIGGER IF EXISTS update_note_survey_question_options_updated_at ON note_survey_question_options;
+CREATE TRIGGER update_note_survey_question_options_updated_at BEFORE UPDATE ON note_survey_question_options
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE note_survey_question_options IS '题目选项表';
+
+CREATE TABLE IF NOT EXISTS note_survey_submissions (
+  id SERIAL PRIMARY KEY,
+  survey_id INTEGER NOT NULL,
+  submitter_ip VARCHAR(100) NOT NULL,
+  user_agent TEXT,
+  submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_survey_id ON note_survey_submissions(survey_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_submitter_ip ON note_survey_submissions(submitter_ip);
+CREATE INDEX IF NOT EXISTS idx_note_survey_submissions_survey_ip ON note_survey_submissions(survey_id, submitter_ip);
+
+COMMENT ON TABLE note_survey_submissions IS '问卷提交记录表';
+
+CREATE TABLE IF NOT EXISTS note_survey_answers (
+  id SERIAL PRIMARY KEY,
+  submission_id INTEGER NOT NULL,
+  question_id INTEGER NOT NULL,
+  answer_text TEXT,
+  answer_file VARCHAR(500),
+  selected_options JSONB DEFAULT '[]',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (submission_id) REFERENCES note_survey_submissions(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_survey_answers_submission_id ON note_survey_answers(submission_id);
+CREATE INDEX IF NOT EXISTS idx_note_survey_answers_question_id ON note_survey_answers(question_id);
+
+COMMENT ON TABLE note_survey_answers IS '问卷答案表';
+
+-- ========================================
+-- 7.4 笔记抽奖表及相关表 (note_lotteries, note_lottery_*)
+-- 来源：database/migrations/update_note_features_pgsql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_lotteries (
+  id SERIAL PRIMARY KEY,
+  note_id INTEGER NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  draw_time TIMESTAMP NOT NULL,
+  ip_limit INTEGER DEFAULT 1,
+  enable_email_notification BOOLEAN DEFAULT TRUE,
+  custom_fields JSONB DEFAULT '[]',
+  show_prizes BOOLEAN DEFAULT TRUE,
+  show_probability BOOLEAN DEFAULT TRUE,
+  show_quantity BOOLEAN DEFAULT TRUE,
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before',
+  show_participants BOOLEAN DEFAULT TRUE,
+  draw_type VARCHAR(20) DEFAULT 'manual',
+  redirect_url VARCHAR(255),
+  is_active BOOLEAN DEFAULT TRUE,
+  is_drawn BOOLEAN DEFAULT FALSE,
+  total_participants INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_note_id ON note_lotteries(note_id);
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_is_active ON note_lotteries(is_active);
+CREATE INDEX IF NOT EXISTS idx_note_lotteries_draw_time ON note_lotteries(draw_time);
+
+DROP TRIGGER IF EXISTS update_note_lotteries_updated_at ON note_lotteries;
+CREATE TRIGGER update_note_lotteries_updated_at BEFORE UPDATE ON note_lotteries
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+ALTER TABLE note_lotteries ADD CONSTRAINT IF NOT EXISTS check_lottery_ip_limit
+  CHECK (ip_limit > 0);
+ALTER TABLE note_lotteries ADD CONSTRAINT IF NOT EXISTS check_lottery_draw_type
+  CHECK (draw_type IN ('manual', 'auto'));
+ALTER TABLE note_lotteries ADD CONSTRAINT IF NOT EXISTS check_lottery_result_visibility
+  CHECK (result_visibility IN ('before', 'after', 'admin'));
+
+COMMENT ON TABLE note_lotteries IS '笔记抽奖主表';
+
+CREATE TABLE IF NOT EXISTS note_lottery_prizes (
+  id SERIAL PRIMARY KEY,
+  lottery_id INTEGER NOT NULL,
+  prize_name VARCHAR(255) NOT NULL,
+  prize_image VARCHAR(500),
+  prize_description TEXT,
+  probability DECIMAL(5,2) NOT NULL,
+  quantity INTEGER DEFAULT 1,
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lottery_prizes_lottery_id ON note_lottery_prizes(lottery_id);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_prizes_sort_order ON note_lottery_prizes(sort_order);
+
+COMMENT ON TABLE note_lottery_prizes IS '笔记抽奖奖项表';
+
+CREATE TABLE IF NOT EXISTS note_lottery_entries (
+  id SERIAL PRIMARY KEY,
+  lottery_id INTEGER NOT NULL,
+  participant_ip VARCHAR(100) NOT NULL,
+  participant_email VARCHAR(255),
+  custom_data JSONB DEFAULT '{}',
+  prize_id INTEGER,
+  is_winner BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE,
+  FOREIGN KEY (prize_id) REFERENCES note_lottery_prizes(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_lottery_id ON note_lottery_entries(lottery_id);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_participant_ip ON note_lottery_entries(participant_ip);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_lottery_ip ON note_lottery_entries(lottery_id, participant_ip);
+CREATE INDEX IF NOT EXISTS idx_note_lottery_entries_is_winner ON note_lottery_entries(is_winner);
+
+COMMENT ON TABLE note_lottery_entries IS '笔记抽奖参与记录表';
+
 
 -- ========================================
 -- 8. 便签表 (sticky_notes) - v2.0更新
@@ -821,6 +1083,7 @@ CREATE TABLE IF NOT EXISTS services (
   name VARCHAR(200) NOT NULL,
   description TEXT DEFAULT NULL,
   content TEXT DEFAULT NULL,
+  content_format VARCHAR(20) DEFAULT 'markdown',
   cover_image VARCHAR(500) DEFAULT NULL,
   price VARCHAR(100) DEFAULT NULL,
   category_id INTEGER DEFAULT NULL REFERENCES service_categories(id) ON DELETE SET NULL,
@@ -831,6 +1094,13 @@ CREATE TABLE IF NOT EXISTS services (
   order_button_text VARCHAR(50) DEFAULT '立即下单',
   order_button_url VARCHAR(500) DEFAULT NULL,
   spec_title VARCHAR(50) DEFAULT '服务规格',
+  product_type VARCHAR(20) DEFAULT 'virtual',
+  stock_total INTEGER DEFAULT 0,
+  stock_sold INTEGER DEFAULT 0,
+  show_stock BOOLEAN DEFAULT TRUE,
+  show_sales BOOLEAN DEFAULT TRUE,
+  payment_config_id INTEGER DEFAULT NULL,
+  order_page_slug VARCHAR(200) DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -839,6 +1109,7 @@ CREATE INDEX IF NOT EXISTS idx_services_category_id ON services(category_id);
 CREATE INDEX IF NOT EXISTS idx_services_is_visible ON services(is_visible);
 CREATE INDEX IF NOT EXISTS idx_services_is_recommended ON services(is_recommended);
 CREATE INDEX IF NOT EXISTS idx_services_sort_order ON services(sort_order);
+CREATE INDEX IF NOT EXISTS idx_services_payment_config_id ON services(payment_config_id);
 CREATE INDEX IF NOT EXISTS idx_services_list_order ON services(is_recommended DESC, sort_order ASC);
 
 DROP TRIGGER IF EXISTS update_services_updated_at ON services;
@@ -849,6 +1120,7 @@ COMMENT ON TABLE services IS '服务表';
 COMMENT ON COLUMN services.name IS '服务名称';
 COMMENT ON COLUMN services.description IS '服务简述';
 COMMENT ON COLUMN services.content IS '服务详情介绍（Markdown格式）';
+COMMENT ON COLUMN services.content_format IS '服务详情格式（text/markdown/html）';
 COMMENT ON COLUMN services.cover_image IS '服务封面图（1:1正方形）';
 COMMENT ON COLUMN services.price IS '价格（文本格式，可包含非数字）';
 COMMENT ON COLUMN services.category_id IS '分类ID（关联service_categories表）';
@@ -859,6 +1131,13 @@ COMMENT ON COLUMN services.show_order_button IS '是否显示立即下单按钮'
 COMMENT ON COLUMN services.order_button_text IS '下单按钮文字';
 COMMENT ON COLUMN services.order_button_url IS '下单按钮跳转URL';
 COMMENT ON COLUMN services.spec_title IS '服务规格标题（可自定义）';
+COMMENT ON COLUMN services.product_type IS '商品类型';
+COMMENT ON COLUMN services.stock_total IS '库存总量';
+COMMENT ON COLUMN services.stock_sold IS '已售数量';
+COMMENT ON COLUMN services.show_stock IS '是否展示库存';
+COMMENT ON COLUMN services.show_sales IS '是否展示销量';
+COMMENT ON COLUMN services.payment_config_id IS '绑定支付配置ID';
+COMMENT ON COLUMN services.order_page_slug IS '下单页路径';
 
 -- ========================================
 -- 21. 服务规格表 (service_specifications) - v2.1新增
@@ -885,6 +1164,139 @@ COMMENT ON COLUMN service_specifications.service_id IS '所属服务ID（关联s
 COMMENT ON COLUMN service_specifications.spec_name IS '规格名称';
 COMMENT ON COLUMN service_specifications.spec_value IS '规格值';
 COMMENT ON COLUMN service_specifications.sort_order IS '排序（数字越小越靠前）';
+
+-- ========================================
+-- 22. 支付配置表 (payment_configs)
+-- ========================================
+CREATE TABLE IF NOT EXISTS payment_configs (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  provider_key VARCHAR(100) NOT NULL,
+  provider_type VARCHAR(50),
+  is_enabled BOOLEAN DEFAULT TRUE,
+  sort_order INTEGER DEFAULT 0,
+  remark VARCHAR(500),
+  config_json JSONB,
+  display_logo VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_configs_is_enabled ON payment_configs(is_enabled);
+CREATE INDEX IF NOT EXISTS idx_payment_configs_sort_order ON payment_configs(sort_order);
+CREATE INDEX IF NOT EXISTS idx_payment_configs_provider_type ON payment_configs(provider_type);
+
+DROP TRIGGER IF EXISTS update_payment_configs_updated_at ON payment_configs;
+CREATE TRIGGER update_payment_configs_updated_at BEFORE UPDATE ON payment_configs
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE payment_configs IS '支付配置表';
+COMMENT ON COLUMN payment_configs.name IS '支付配置名称';
+COMMENT ON COLUMN payment_configs.provider_key IS '支付渠道标识';
+COMMENT ON COLUMN payment_configs.provider_type IS '支付渠道类型（yipay/paypal等）';
+COMMENT ON COLUMN payment_configs.is_enabled IS '是否启用';
+COMMENT ON COLUMN payment_configs.sort_order IS '排序';
+COMMENT ON COLUMN payment_configs.remark IS '备注';
+COMMENT ON COLUMN payment_configs.config_json IS '渠道配置（敏感字段建议加密后存储）';
+COMMENT ON COLUMN payment_configs.display_logo IS '展示Logo（可选）';
+
+-- ========================================
+-- 23. 订单表 (orders)
+-- ========================================
+CREATE TABLE IF NOT EXISTS orders (
+  id SERIAL PRIMARY KEY,
+  service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+  status VARCHAR(50) DEFAULT 'pending',
+  buyer_name VARCHAR(100),
+  buyer_contact VARCHAR(200),
+  buyer_email VARCHAR(255),
+  buyer_phone VARCHAR(50),
+  buyer_address TEXT,
+  payment_config_id INTEGER REFERENCES payment_configs(id) ON DELETE SET NULL,
+  payment_gateway VARCHAR(50),
+  payment_trade_no VARCHAR(64),
+  payment_provider_order_id VARCHAR(128),
+  payment_url TEXT,
+  payment_status VARCHAR(50) DEFAULT 'unpaid',
+  paid_at TIMESTAMP,
+  payment_meta JSONB,
+  ip_address VARCHAR(45),
+  user_agent TEXT,
+  cancel_reason TEXT,
+  shipping_status VARCHAR(50),
+  tracking_no VARCHAR(100),
+  shipped_at TIMESTAMP,
+  expired_at TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_service_id ON orders(service_id);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_config_id ON orders(payment_config_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_shipping_status ON orders(shipping_status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_trade_no ON orders(payment_trade_no);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_gateway ON orders(payment_gateway);
+CREATE INDEX IF NOT EXISTS idx_orders_paid_at ON orders(paid_at);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+
+DROP TRIGGER IF EXISTS update_orders_updated_at ON orders;
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE orders IS '订单表';
+COMMENT ON COLUMN orders.service_id IS '关联服务ID';
+COMMENT ON COLUMN orders.amount IS '订单金额';
+COMMENT ON COLUMN orders.status IS '订单状态';
+COMMENT ON COLUMN orders.buyer_name IS '购买人姓名';
+COMMENT ON COLUMN orders.buyer_contact IS '购买人联系方式';
+COMMENT ON COLUMN orders.buyer_email IS '购买人邮箱';
+COMMENT ON COLUMN orders.buyer_phone IS '购买人手机号';
+COMMENT ON COLUMN orders.buyer_address IS '购买人地址';
+COMMENT ON COLUMN orders.payment_config_id IS '支付配置ID';
+COMMENT ON COLUMN orders.payment_gateway IS '实际支付渠道（yipay/paypal等）';
+COMMENT ON COLUMN orders.payment_trade_no IS '商户交易号（用于回调关联）';
+COMMENT ON COLUMN orders.payment_provider_order_id IS '第三方订单号（如PayPal order id）';
+COMMENT ON COLUMN orders.payment_url IS '支付跳转链接';
+COMMENT ON COLUMN orders.payment_status IS '支付状态';
+COMMENT ON COLUMN orders.paid_at IS '支付完成时间';
+COMMENT ON COLUMN orders.payment_meta IS '支付回调原始数据（排查用）';
+COMMENT ON COLUMN orders.ip_address IS '下单IP';
+COMMENT ON COLUMN orders.user_agent IS '浏览器信息';
+COMMENT ON COLUMN orders.cancel_reason IS '取消原因';
+COMMENT ON COLUMN orders.shipping_status IS '发货状态（仅实物）';
+COMMENT ON COLUMN orders.tracking_no IS '快递单号（仅实物）';
+COMMENT ON COLUMN orders.shipped_at IS '发货时间（仅实物）';
+COMMENT ON COLUMN orders.expired_at IS '过期时间';
+
+-- ========================================
+-- 24. 卡密表 (cards)
+-- ========================================
+CREATE TABLE IF NOT EXISTS cards (
+  id SERIAL PRIMARY KEY,
+  service_id INTEGER NOT NULL REFERENCES services(id) ON DELETE CASCADE,
+  card_code VARCHAR(500) NOT NULL,
+  card_status VARCHAR(50) DEFAULT 'unused',
+  bind_order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_cards_service_id ON cards(service_id);
+CREATE INDEX IF NOT EXISTS idx_cards_bind_order_id ON cards(bind_order_id);
+CREATE INDEX IF NOT EXISTS idx_cards_card_status ON cards(card_status);
+
+DROP TRIGGER IF EXISTS update_cards_updated_at ON cards;
+CREATE TRIGGER update_cards_updated_at BEFORE UPDATE ON cards
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+COMMENT ON TABLE cards IS '卡密表';
+COMMENT ON COLUMN cards.service_id IS '关联服务ID';
+COMMENT ON COLUMN cards.card_code IS '卡密内容';
+COMMENT ON COLUMN cards.card_status IS '卡密状态';
+COMMENT ON COLUMN cards.bind_order_id IS '绑定订单ID';
 
 -- ========================================
 -- 22. 官网主题基础配置表 (promo_config) - v3.3.0新增

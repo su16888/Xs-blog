@@ -1,0 +1,6 @@
+export { default as SettingsNav } from './SettingsNav'
+export { default as BasicSettingsTab } from './BasicSettingsTab'
+export { default as FunctionSettingsTab } from './FunctionSettingsTab'
+export { default as NavigationTab } from './NavigationTab'
+export { default as TextSettingsTab } from './TextSettingsTab'
+export { default as AccountSecurityTab } from './AccountSecurityTab'

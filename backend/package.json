@@ -7,7 +7,13 @@
     "start": "node src/app.js",
     "dev": "nodemon src/app.js",
     "obfuscate": "node obfuscate.js",
+    "obfuscate:extreme": "node obfuscate.js extreme",
+    "obfuscate:simple": "node obfuscate.js simple",
+    "obfuscate:none": "node obfuscate.js none",
     "build:prod": "npm run obfuscate",
+    "build:extreme": "npm run obfuscate:extreme",
+    "build:simple": "npm run obfuscate:simple",
+    "build:none": "npm run obfuscate:none",
     "start:prod": "node dist/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -39,9 +45,14 @@
     "pg": "^8.16.3",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
+    "sanitize-html": "^2.17.0",
     "sharp": "^0.34.5",
     "svg-captcha": "^1.4.0",
     "undici": "^7.16.0"
+  },
+  "devDependencies": {
+    "javascript-obfuscator": "^5.0.1",
+    "nodemon": "^3.1.11"
   },
   "optionalDependencies": {
     "sqlite3": "^5.1.7"

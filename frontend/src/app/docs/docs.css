@@ -1,0 +1,62 @@
+/* ========================================
+   Docs 页面专用样式
+   ======================================== */
+
+/* ========================================
+   目录高亮样式 - 使用 CSS 控制避免 JS 重渲染
+   ======================================== */
+
+.toc-item {
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.toc-active {
+  color: var(--primary-500) !important;
+  background-color: rgba(var(--primary-500-rgb, 16, 185, 129), 0.1) !important;
+  font-weight: 500 !important;
+}
+
+.toc-inactive {
+  color: var(--text-tertiary);
+}
+
+.toc-inactive:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+}
+
+/* ========================================
+   搜索高亮样式
+   ======================================== */
+
+.search-highlight {
+  background-color: rgba(250, 204, 21, 0.4);
+  border-radius: 2px;
+  padding: 0 2px;
+  margin: 0 -2px;
+}
+
+.search-highlight-current {
+  background-color: rgba(250, 204, 21, 0.8);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.5);
+}
+
+/* 黑色主题下的搜索高亮 */
+html[data-theme="black"] .search-highlight {
+  background-color: rgba(250, 204, 21, 0.3);
+}
+
+html[data-theme="black"] .search-highlight-current {
+  background-color: rgba(250, 204, 21, 0.6);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.4);
+}
+
+/* 灰色主题下的搜索高亮 */
+html[data-theme="gray"] .search-highlight {
+  background-color: rgba(250, 204, 21, 0.35);
+}
+
+html[data-theme="gray"] .search-highlight-current {
+  background-color: rgba(250, 204, 21, 0.7);
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.45);
+}

@@ -1,0 +1,349 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import {
+  getCurrentUser,
+  getAdminProfile,
+  updateAdminProfile,
+  uploadAdminAvatar,
+  deleteAdminAvatar,
+  getAdminSocialLinks,
+  createAdminSocialLink,
+  updateAdminSocialLink,
+  deleteAdminSocialLink,
+  uploadAdminSocialLinkIcon,
+  uploadAdminSocialLinkQRCode
+} from '@/lib/api'
+import { usePageTitle } from '@/hooks/usePageTitle'
+import AdminToast from '@/components/AdminToast'
+import ImageCropper from '@/components/ImageCropper'
+import { getAdminRoute } from '@/lib/adminConfig'
+
+interface SocialLink {
+  id?: number
+  platform: string
+  account: string
+  link?: string
+  icon?: string
+  qrcode?: string
+  show_in_profile?: boolean
+  is_visible?: boolean
+}
+
+export default function ProfilePage() {
+  usePageTitle('个人资料')
+  const router = useRouter()
+  const [user, setUser] = useState<any>(null)
+  const [profile, setProfile] = useState<any>({
+    name: '',
+    title: '',
+    bio: '',
+    location: '',
+    avatar: '',
+    website: '',
+    website_title: ''
+  })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [deletingAvatar, setDeletingAvatar] = useState(false)
+  const [showCropper, setShowCropper] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null)
+  const [toast, setToast] = useState<{ show: boolean; type: 'success' | 'error'; message: string }>({
+    show: false,
+    type: 'success',
+    message: ''
+  })
+  const [links, setLinks] = useState<SocialLink[]>([])
+  const [editingLink, setEditingLink] = useState<SocialLink | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [formData, setFormData] = useState<SocialLink>({
+    platform: '',
+    account: '',
+    link: '',
+    icon: '',
+    qrcode: '',
+    show_in_profile: false,
+    is_visible: true
+  })
+  const [uploadingIcon, setUploadingIcon] = useState(false)
+  const [uploadingQRCode, setUploadingQRCode] = useState(false)
+
+  useEffect(() => {
+    checkAuthAndLoadProfile()
+  }, [])
+
+  const checkAuthAndLoadProfile = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        router.push(getAdminRoute('login'))
+        return
+      }
+
+      const userData = await getCurrentUser()
+      setUser(userData)
+
+      try {
+        const profileData = await getAdminProfile()
+        // 确保所有字段都有默认值，避免 null
+        setProfile({
+          name: profileData?.name || '',
+          title: profileData?.title || '',
+          bio: profileData?.bio || '',
+          location: profileData?.location || '',
+          avatar: profileData?.avatar || '',
+          website: profileData?.website || '',
+          website_title: profileData?.website_title || ''
+        })
+      } catch (error) {
+        // 使用默认值
+      }
+
+      // 加载社交链接
+      await loadLinks()
+    } catch (error) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      router.push(getAdminRoute('login'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setProfile({
+      ...profile,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      setToast({ show: true, type: 'error', message: '请选择图片文件' })
+      return
+    }
+
+    // 读取图片并显示裁剪器
+    const reader = new FileReader()
+    reader.onload = () => {
+      setImageToCrop(reader.result as string)
+      setShowCropper(true)
+    }
+    reader.readAsDataURL(file)
+
+    // 清空input，允许重复选择同一文件
+    e.target.value = ''
+  }
+
+  const handleCropComplete = async (croppedImageBlob: Blob) => {
+    setShowCropper(false)
+    setUploadingAvatar(true)
+
+    try {
+      // 将Blob转换为File
+      const file = new File([croppedImageBlob], 'avatar.jpg', { type: 'image/jpeg' })
+      const response = await uploadAdminAvatar(file)
+      if (response.success) {
+        setProfile({
+          ...profile,
+          avatar: response.data.avatar
+        })
+        setToast({ show: true, type: 'success', message: '头像上传成功' })
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '头像上传失败' })
+    } finally {
+      setUploadingAvatar(false)
+      setImageToCrop(null)
+    }
+  }
+
+  const handleCropCancel = () => {
+    setShowCropper(false)
+    setImageToCrop(null)
+  }
+
+  const handleAvatarDelete = async () => {
+    setDeletingAvatar(true)
+
+    try {
+      const response = await deleteAdminAvatar()
+      if (response.success) {
+        setProfile({
+          ...profile,
+          avatar: ''
+        })
+        setToast({ show: true, type: 'success', message: '头像删除成功' })
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '头像删除失败' })
+    } finally {
+      setDeletingAvatar(false)
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSaving(true)
+
+    try {
+      await updateAdminProfile(profile)
+      setToast({ show: true, type: 'success', message: '个人资料更新成功' })
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '更新失败' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  // 社交链接相关函数
+  const loadLinks = async () => {
+    try {
+      const response = await getAdminSocialLinks()
+      if (response.success) {
+        const linksData = Array.isArray(response.data) ? response.data : []
+        setLinks(linksData)
+      }
+    } catch (error) {
+      console.error('Failed to load social links:', error)
+      setLinks([])
+    }
+  }
+
+  const handleLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    })
+  }
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      if (editingLink?.id) {
+        const response = await updateAdminSocialLink(editingLink.id, formData)
+        if (response.success) {
+          setToast({ show: true, type: 'success', message: '社交链接更新成功' })
+          await loadLinks()
+          resetLinkForm()
+        }
+      } else {
+        const response = await createAdminSocialLink(formData)
+        if (response.success) {
+          setToast({ show: true, type: 'success', message: '社交链接添加成功' })
+          await loadLinks()
+          resetLinkForm()
+        }
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '操作失败' })
+    }
+  }
+
+  const handleEditLink = (link: SocialLink) => {
+    setEditingLink(link)
+    setFormData({
+      platform: link.platform,
+      account: link.account,
+      link: link.link || '',
+      icon: link.icon || '',
+      qrcode: link.qrcode || '',
+      show_in_profile: link.show_in_profile || false,
+      is_visible: link.is_visible !== undefined ? link.is_visible : true
+    })
+    setShowForm(true)
+  }
+
+  const handleDeleteLink = async (id: number) => {
+    if (!confirm('确定要删除这个社交链接吗？')) return
+
+    try {
+      const response = await deleteAdminSocialLink(id)
+      if (response.success) {
+        setToast({ show: true, type: 'success', message: '社交链接删除成功' })
+        await loadLinks()
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '删除失败' })
+    }
+  }
+
+  const resetLinkForm = () => {
+    setFormData({ platform: '', account: '', link: '', icon: '', qrcode: '', show_in_profile: false, is_visible: true })
+    setEditingLink(null)
+    setShowForm(false)
+  }
+
+  const handleIconUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingIcon(true)
+
+    try {
+      const response = await uploadAdminSocialLinkIcon(file)
+      if (response.success) {
+        setFormData({
+          ...formData,
+          icon: response.data.url
+        })
+        setToast({ show: true, type: 'success', message: '图标上传成功' })
+        e.target.value = ''
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '图标上传失败' })
+    } finally {
+      setUploadingIcon(false)
+    }
+  }
+
+  const handleIconDelete = () => {
+    setFormData({
+      ...formData,
+      icon: ''
+    })
+    setToast({ show: true, type: 'success', message: '图标删除成功' })
+  }
+
+  const handleQRCodeUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadingQRCode(true)
+
+    try {
+      const response = await uploadAdminSocialLinkQRCode(file)
+      if (response.success) {
+        setFormData({
+          ...formData,
+          qrcode: response.data.url
+        })
+        setToast({ show: true, type: 'success', message: '二维码上传成功' })
+        e.target.value = ''
+      }
+    } catch (error: any) {
+      setToast({ show: true, type: 'error', message: error.response?.data?.message || '二维码上传失败' })
+    } finally {
+      setUploadingQRCode(false)
+    }
+  }
+
+  const handleQRCodeDelete = () => {
+    setFormData({
+      ...formData,
+      qrcode: ''
+    })
+    setToast({ show: true, type: 'success', message: '二维码删除成功' })
+  }
+
+  if (loading) {
+    return null
+  }
+

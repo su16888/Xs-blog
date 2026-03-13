@@ -3,36 +3,11 @@
 -- Personal Homepage System - Database Schema
 -- Developer: arran
 -- ========================================
--- 版本: 3.8.0
+-- 版本: 4.0.0
 -- 创建日期: 2025-10-31
--- 更新日期: 2025-12-16
+-- 更新日期: 2026-01-29
 -- 数据库: MySQL 5.7+
 -- 字符集: UTF-8 (utf8mb4)
--- ========================================
--- 更新日志:
--- v3.8.0 (2025-12-16): 网站导航展示类型改为三选项（前台/后台/前后台），移除后台首页显示字段
--- v3.7.0 (2025-12-15): 新增页面访问统计功能 - 支持仪表盘访问趋势、模块统计、IP排行
--- v3.5.0 (2025-12-01): 新增朋友圈功能 - 支持动态发布、图片展示、个人资料设置，官网主题与朋友圈主题模式互斥
--- v3.4.0 (2025-11-29): 新增页面访问控制功能 - 支持/user、/blog、/promo页面访问权限控制
--- v3.3.0 (2025-11-25): 新增服务业务功能 - 支持服务展示、分类管理、规格配置
--- v3.2.0 (2025-11-25): 新增图库功能 - 支持图册分类、图片管理、密码保护、拖拽排序
--- v3.1.0 (2025-11-24): 性能优化 - 新增组合索引提升查询性能80%+
--- v3.0.5 (2025-11-19): 新增网站导航后台首页显示功能，支持在后台首页展示常用导航（最多6个）
--- v3.0.4 (2025-11-19): 新增笔记来源类型功能，支持原创/转载标识和文章来源信息
--- v1.0.3 (2024-11-10): 新增笔记网盘资源功能，支持多网盘管理和轮播展示
--- v1.0.2 (2024-11-10): 新增笔记列表展示控制功能（show_in_list字段）
--- v1.0.0 (2024-11-10): 新增导航分类管理系统，支持分类展示和推荐功能
--- v0.9.0 (2025-11-17): 社交链接功能增强
--- v0.8.0 (2025-11-16): 新增笔记摘要和密码保护功能
--- v0.7.0 (2025-11-15): 新增笔记独立页面功能，支持页面/窗口展示模式切换
--- v0.6.0 (2024-11-07): 待办事项新增时间点记录功能，支持工作日志管理
--- v0.5.0 (2024-11-07): 待办事项新增项目进度管理功能（进度、优先级、状态、工时等）
--- v2.4.0 (2024-11-07): 前端配置改为通过后端API动态获取，移除config.js
--- v2.3.0 (2024-11-07): 后台路径配置移至后端，提升安全性
--- v0.1.0 (2024-11-05): 新增留言系统，支持分类、验证码、IP频率限制
--- v0.0.1 (2025-11-04): 重构标签和分类系统，优化数据结构
--- v1.1.0 (2025-11-03): 新增便签分类功能、完善待办事项提醒功能
--- v1.0.0 (2025-10-31): 初始版本 - 基础功能
 -- ========================================
 
 -- 创建数据库
@@ -164,6 +139,7 @@ CREATE TABLE IF NOT EXISTS categories (
 -- ========================================
 CREATE TABLE IF NOT EXISTS notes (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  custom_slug VARCHAR(200) DEFAULT NULL COMMENT '自定义URL路径',
   title VARCHAR(200) NOT NULL COMMENT '标题',
   content TEXT NOT NULL COMMENT '内容（支持Markdown）',
   summary TEXT DEFAULT NULL COMMENT '笔记摘要（用于列表展示，为空则自动截取正文前150字）',
@@ -197,6 +173,7 @@ CREATE TABLE IF NOT EXISTS notes (
   INDEX idx_sort_order (sort_order),
   INDEX idx_source_type (source_type),
   INDEX idx_display_mode (display_mode),
+  UNIQUE KEY uniq_notes_custom_slug (custom_slug),
   FULLTEXT INDEX idx_title_content (title, content),
   FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记表';
@@ -219,6 +196,231 @@ CREATE TABLE IF NOT EXISTS note_disks (
   INDEX idx_sort_order (sort_order),
   FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记网盘资源表';
+
+-- ========================================
+-- 7.2 笔记投票表及相关表 (note_polls, note_poll_options, note_poll_votes)
+-- 来源：database/migrations/update_note_features_mysql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_polls (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  note_id INT NOT NULL,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  poll_type VARCHAR(20) NOT NULL DEFAULT 'single',
+  max_choices INT DEFAULT 1,
+  start_time DATETIME,
+  end_time DATETIME,
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before',
+  show_participants TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示参与人数',
+  allow_revote TINYINT(1) DEFAULT 0,
+  ip_limit INT DEFAULT 1,
+  redirect_url VARCHAR(255) DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  total_votes INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CHECK (poll_type IN ('single', 'multiple')),
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin')),
+  CHECK (max_choices > 0),
+  CHECK (ip_limit > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记投票主表';
+
+CREATE INDEX idx_note_polls_note_id ON note_polls(note_id);
+CREATE INDEX idx_note_polls_is_active ON note_polls(is_active);
+CREATE INDEX idx_note_polls_end_time ON note_polls(end_time);
+
+CREATE TABLE IF NOT EXISTS note_poll_options (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  poll_id INT NOT NULL,
+  option_text VARCHAR(500) NOT NULL,
+  option_image VARCHAR(500),
+  sort_order INT DEFAULT 0,
+  vote_count INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记投票选项表';
+
+CREATE INDEX idx_note_poll_options_poll_id ON note_poll_options(poll_id);
+CREATE INDEX idx_note_poll_options_sort_order ON note_poll_options(sort_order);
+
+CREATE TABLE IF NOT EXISTS note_poll_votes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  poll_id INT NOT NULL,
+  option_id INT NOT NULL,
+  voter_ip VARCHAR(100) NOT NULL,
+  voter_fingerprint VARCHAR(255),
+  user_agent TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (poll_id) REFERENCES note_polls(id) ON DELETE CASCADE,
+  FOREIGN KEY (option_id) REFERENCES note_poll_options(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记投票记录表';
+
+CREATE INDEX idx_note_poll_votes_poll_id ON note_poll_votes(poll_id);
+CREATE INDEX idx_note_poll_votes_option_id ON note_poll_votes(option_id);
+CREATE INDEX idx_note_poll_votes_voter_ip ON note_poll_votes(voter_ip);
+CREATE INDEX idx_note_poll_votes_poll_ip ON note_poll_votes(poll_id, voter_ip);
+
+-- ========================================
+-- 7.3 笔记问卷表及相关表 (note_surveys, note_survey_*) 
+-- 来源：database/migrations/update_note_features_mysql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_surveys (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  note_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  start_time DATETIME,
+  end_time DATETIME,
+  ip_limit INT DEFAULT 1,
+  allow_resubmit TINYINT(1) DEFAULT 0,
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before',
+  show_participants TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示参与人数',
+  redirect_url VARCHAR(255) DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  total_submissions INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CHECK (ip_limit > 0),
+  CHECK (result_visibility IN ('none', 'before', 'after', 'admin'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记问卷主表';
+
+CREATE INDEX idx_note_surveys_note_id ON note_surveys(note_id);
+CREATE INDEX idx_note_surveys_is_active ON note_surveys(is_active);
+CREATE INDEX idx_note_surveys_end_time ON note_surveys(end_time);
+
+CREATE TABLE IF NOT EXISTS note_survey_questions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  question_type VARCHAR(20) NOT NULL,
+  question_title VARCHAR(500) NOT NULL,
+  question_description TEXT,
+  question_image VARCHAR(500),
+  is_required TINYINT(1) DEFAULT 0,
+  sort_order INT DEFAULT 0,
+  config JSON,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE,
+  CHECK (question_type IN ('text', 'textarea', 'radio', 'checkbox', 'file', 'rating', 'date', 'time'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记问卷题目表';
+
+CREATE INDEX idx_note_survey_questions_survey_id ON note_survey_questions(survey_id);
+CREATE INDEX idx_note_survey_questions_sort_order ON note_survey_questions(sort_order);
+
+CREATE TABLE IF NOT EXISTS note_survey_question_options (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  question_id INT NOT NULL,
+  option_text VARCHAR(500) NOT NULL,
+  option_image VARCHAR(500),
+  sort_order INT DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记问卷题目选项表';
+
+CREATE INDEX idx_note_survey_question_options_question_id ON note_survey_question_options(question_id);
+CREATE INDEX idx_note_survey_question_options_sort_order ON note_survey_question_options(sort_order);
+
+CREATE TABLE IF NOT EXISTS note_survey_submissions (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  survey_id INT NOT NULL,
+  submitter_ip VARCHAR(100) NOT NULL,
+  user_agent TEXT,
+  submitted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (survey_id) REFERENCES note_surveys(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记问卷提交记录表';
+
+CREATE INDEX idx_note_survey_submissions_survey_id ON note_survey_submissions(survey_id);
+CREATE INDEX idx_note_survey_submissions_submitter_ip ON note_survey_submissions(submitter_ip);
+CREATE INDEX idx_note_survey_submissions_survey_ip ON note_survey_submissions(survey_id, submitter_ip);
+
+CREATE TABLE IF NOT EXISTS note_survey_answers (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  submission_id INT NOT NULL,
+  question_id INT NOT NULL,
+  answer_text TEXT,
+  answer_file VARCHAR(500),
+  selected_options JSON,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (submission_id) REFERENCES note_survey_submissions(id) ON DELETE CASCADE,
+  FOREIGN KEY (question_id) REFERENCES note_survey_questions(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记问卷答案表';
+
+CREATE INDEX idx_note_survey_answers_submission_id ON note_survey_answers(submission_id);
+CREATE INDEX idx_note_survey_answers_question_id ON note_survey_answers(question_id);
+
+-- ========================================
+-- 7.4 笔记抽奖表及相关表 (note_lotteries, note_lottery_*)
+-- 来源：database/migrations/update_note_features_mysql.sql
+-- ========================================
+CREATE TABLE IF NOT EXISTS note_lotteries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  note_id INT NOT NULL,
+  title VARCHAR(255) NOT NULL,
+  description TEXT,
+  draw_time DATETIME NOT NULL,
+  ip_limit INT DEFAULT 1,
+  enable_email_notification TINYINT(1) DEFAULT 1,
+  custom_fields JSON,
+  show_prizes TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示具体奖项',
+  show_probability TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示奖项概率',
+  show_quantity TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示奖项数量',
+  result_visibility VARCHAR(20) NOT NULL DEFAULT 'before' COMMENT '结果可见性：before-前台可见, after-参与后可见, admin-仅后台可见',
+  show_participants TINYINT(1) DEFAULT 1 COMMENT '是否在前台展示参与人数',
+  draw_type ENUM('manual', 'auto') DEFAULT 'manual' COMMENT '开奖方式：manual-手动, auto-自动',
+  redirect_url VARCHAR(255) DEFAULT NULL,
+  is_active TINYINT(1) DEFAULT 1,
+  is_drawn TINYINT(1) DEFAULT 0,
+  total_participants INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (note_id) REFERENCES notes(id) ON DELETE CASCADE,
+  CONSTRAINT check_lottery_ip_limit CHECK (ip_limit > 0),
+  CHECK (result_visibility IN ('before', 'after', 'admin'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记抽奖主表';
+
+CREATE INDEX idx_note_lotteries_note_id ON note_lotteries(note_id);
+CREATE INDEX idx_note_lotteries_is_active ON note_lotteries(is_active);
+CREATE INDEX idx_note_lotteries_draw_time ON note_lotteries(draw_time);
+
+CREATE TABLE IF NOT EXISTS note_lottery_prizes (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  lottery_id INT NOT NULL,
+  prize_name VARCHAR(255) NOT NULL,
+  prize_image VARCHAR(500),
+  prize_description TEXT,
+  probability DECIMAL(5,2) NOT NULL,
+  quantity INT DEFAULT 1,
+  sort_order INT DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE,
+  CONSTRAINT check_probability_range CHECK (probability >= 0 AND probability <= 100),
+  CONSTRAINT check_quantity_positive CHECK (quantity >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记抽奖奖项表';
+
+CREATE INDEX idx_note_lottery_prizes_lottery_id ON note_lottery_prizes(lottery_id);
+CREATE INDEX idx_note_lottery_prizes_sort_order ON note_lottery_prizes(sort_order);
+
+CREATE TABLE IF NOT EXISTS note_lottery_entries (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  lottery_id INT NOT NULL,
+  participant_ip VARCHAR(100) NOT NULL,
+  participant_email VARCHAR(255),
+  custom_data JSON,
+  prize_id INT,
+  is_winner TINYINT(1) DEFAULT 0,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (lottery_id) REFERENCES note_lotteries(id) ON DELETE CASCADE,
+  FOREIGN KEY (prize_id) REFERENCES note_lottery_prizes(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='笔记抽奖参与记录表';
+
+CREATE INDEX idx_note_lottery_entries_lottery_id ON note_lottery_entries(lottery_id);
+CREATE INDEX idx_note_lottery_entries_participant_ip ON note_lottery_entries(participant_ip);
+CREATE INDEX idx_note_lottery_entries_lottery_ip ON note_lottery_entries(lottery_id, participant_ip);
+CREATE INDEX idx_note_lottery_entries_is_winner ON note_lottery_entries(is_winner);
 
 -- ========================================
 -- 8. 便签表 (sticky_notes) - v2.0更新
@@ -487,6 +689,7 @@ CREATE TABLE IF NOT EXISTS services (
   name VARCHAR(200) NOT NULL COMMENT '服务名称',
   description TEXT DEFAULT NULL COMMENT '服务简述',
   content TEXT DEFAULT NULL COMMENT '服务详情介绍（Markdown格式）',
+  content_format VARCHAR(20) DEFAULT 'markdown' COMMENT '服务详情格式（text/markdown/html）',
   cover_image VARCHAR(500) DEFAULT NULL COMMENT '服务封面图（1:1正方形）',
   price VARCHAR(100) DEFAULT NULL COMMENT '价格（文本格式，可包含非数字）',
   category_id INT UNSIGNED DEFAULT NULL COMMENT '分类ID（关联service_categories表）',
@@ -497,6 +700,13 @@ CREATE TABLE IF NOT EXISTS services (
   order_button_text VARCHAR(50) DEFAULT '立即下单' COMMENT '下单按钮文字',
   order_button_url VARCHAR(500) DEFAULT NULL COMMENT '下单按钮跳转URL',
   spec_title VARCHAR(50) DEFAULT '服务规格' COMMENT '服务规格标题（可自定义）',
+  product_type ENUM('card', 'virtual', 'physical') DEFAULT 'virtual' COMMENT '商品类型',
+  stock_total INT DEFAULT 0 COMMENT '库存总量',
+  stock_sold INT DEFAULT 0 COMMENT '已售数量',
+  show_stock TINYINT(1) DEFAULT 1 COMMENT '是否展示库存',
+  show_sales TINYINT(1) DEFAULT 1 COMMENT '是否展示销量',
+  payment_config_id INT UNSIGNED DEFAULT NULL COMMENT '绑定支付配置ID',
+  order_page_slug VARCHAR(200) DEFAULT NULL COMMENT '下单页路径',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
@@ -504,6 +714,7 @@ CREATE TABLE IF NOT EXISTS services (
   INDEX idx_is_visible (is_visible),
   INDEX idx_is_recommended (is_recommended),
   INDEX idx_sort_order (sort_order),
+  INDEX idx_payment_config_id (payment_config_id),
   INDEX idx_services_list_order (is_recommended DESC, sort_order ASC),
   FOREIGN KEY (category_id) REFERENCES service_categories (id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务表';
@@ -524,6 +735,90 @@ CREATE TABLE IF NOT EXISTS service_specifications (
   INDEX idx_sort_order (sort_order),
   FOREIGN KEY (service_id) REFERENCES services (id) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='服务规格表';
+
+-- ========================================
+-- 21. 支付配置表 (payment_configs)
+-- ========================================
+CREATE TABLE IF NOT EXISTS payment_configs (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL COMMENT '支付配置名称',
+  provider_key VARCHAR(100) NOT NULL COMMENT '支付渠道标识',
+  provider_type VARCHAR(50) DEFAULT NULL COMMENT '支付渠道类型（yipay/paypal等）',
+  is_enabled TINYINT(1) DEFAULT 1 COMMENT '是否启用',
+  sort_order INT DEFAULT 0 COMMENT '排序',
+  remark VARCHAR(500) DEFAULT NULL COMMENT '备注',
+  config_json JSON DEFAULT NULL COMMENT '渠道配置（敏感字段建议使用DB_ENCRYPTION_KEY加密后存储）',
+  display_logo VARCHAR(255) DEFAULT NULL COMMENT '展示Logo（可选）',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  INDEX idx_is_enabled (is_enabled),
+  INDEX idx_sort_order (sort_order),
+  INDEX idx_provider_type (provider_type)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='支付配置表';
+
+-- ========================================
+-- 22. 订单表 (orders)
+-- ========================================
+CREATE TABLE IF NOT EXISTS orders (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  service_id INT UNSIGNED NOT NULL COMMENT '关联服务ID',
+  amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00 COMMENT '订单金额',
+  status VARCHAR(50) DEFAULT 'pending' COMMENT '订单状态',
+  buyer_name VARCHAR(100) DEFAULT NULL COMMENT '购买人姓名',
+  buyer_contact VARCHAR(200) DEFAULT NULL COMMENT '购买人联系方式',
+  buyer_email VARCHAR(255) DEFAULT NULL COMMENT '购买人邮箱',
+  buyer_phone VARCHAR(50) DEFAULT NULL COMMENT '购买人手机号',
+  buyer_address TEXT DEFAULT NULL COMMENT '购买人地址',
+  payment_config_id INT UNSIGNED DEFAULT NULL COMMENT '支付配置ID',
+  payment_gateway VARCHAR(50) DEFAULT NULL COMMENT '实际支付渠道（yipay/paypal等）',
+  payment_trade_no VARCHAR(64) DEFAULT NULL COMMENT '商户交易号（用于回调关联）',
+  payment_provider_order_id VARCHAR(128) DEFAULT NULL COMMENT '第三方订单号（如PayPal order id）',
+  payment_url TEXT DEFAULT NULL COMMENT '支付跳转链接',
+  payment_status VARCHAR(50) DEFAULT 'unpaid' COMMENT '支付状态',
+  paid_at TIMESTAMP NULL COMMENT '支付完成时间',
+  payment_meta JSON DEFAULT NULL COMMENT '支付回调原始数据（排查用）',
+  ip_address VARCHAR(45) DEFAULT NULL COMMENT '下单IP',
+  user_agent TEXT DEFAULT NULL COMMENT '浏览器信息',
+  cancel_reason TEXT DEFAULT NULL COMMENT '取消原因',
+  shipping_status VARCHAR(50) DEFAULT NULL COMMENT '发货状态（仅实物）',
+  tracking_no VARCHAR(100) DEFAULT NULL COMMENT '快递单号（仅实物）',
+  shipped_at TIMESTAMP NULL COMMENT '发货时间（仅实物）',
+  expired_at TIMESTAMP NULL COMMENT '过期时间',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (payment_config_id) REFERENCES payment_configs(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  INDEX idx_service_id (service_id),
+  INDEX idx_payment_config_id (payment_config_id),
+  INDEX idx_status (status),
+  INDEX idx_payment_status (payment_status),
+  INDEX idx_shipping_status (shipping_status),
+  INDEX idx_payment_trade_no (payment_trade_no),
+  INDEX idx_payment_gateway (payment_gateway),
+  INDEX idx_paid_at (paid_at),
+  INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
+
+-- ========================================
+-- 23. 卡密表 (cards)
+-- ========================================
+CREATE TABLE IF NOT EXISTS cards (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  service_id INT UNSIGNED NOT NULL COMMENT '关联服务ID',
+  card_code VARCHAR(500) NOT NULL COMMENT '卡密内容',
+  card_status VARCHAR(50) DEFAULT 'unused' COMMENT '卡密状态',
+  bind_order_id INT UNSIGNED DEFAULT NULL COMMENT '绑定订单ID',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  FOREIGN KEY (service_id) REFERENCES services(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  FOREIGN KEY (bind_order_id) REFERENCES orders(id) ON DELETE SET NULL ON UPDATE CASCADE,
+  INDEX idx_service_id (service_id),
+  INDEX idx_bind_order_id (bind_order_id),
+  INDEX idx_card_status (card_status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='卡密表';
 
 -- ========================================
 -- 21. 官网主题基础配置表 (promo_config) - v3.3.0新增

@@ -50,8 +50,9 @@ const getBackendConfig = () => {
 const backendConfig = getBackendConfig()
 
 const nextConfig = {
-  // Turbopack 配置 - Next.js 16 默认使用 Turbopack
-  turbopack: {},
+  turbopack: {
+    root: __dirname,
+  },
   // 输出配置 - 注释掉 standalone 模式，使用标准输出
   // output: 'standalone',  // 已禁用：standalone 模式会导致部署问题
   // 实验性优化配置
