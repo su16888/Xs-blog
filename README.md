@@ -3,7 +3,7 @@
 # Xs-blog - 现代化个人主页系统
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.5.0-blue)](https://github.com/su16888/Xs-blog)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue)](https://github.com/su16888/Xs-blog)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![MySQL Version](https://img.shields.io/badge/mysql-%3E%3D5.6-orange)](https://www.mysql.com/)
 [![SQLite Version](https://img.shields.io/badge/sqlite-%3E%3D3.0-blue)](https://www.sqlite.org/)
@@ -17,7 +17,7 @@
 
 ## 📖 项目简介
 
-**Xs-blog V3.5.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
+**Xs-blog V4.0.0** 是一个现代化的全栈个人主页系统，采用前后端分离架构，提供完整的个人品牌展示、内容管理和社交链接功能。支持多种部署模式，从个人博客到企业官网，满足不同场景需求。
 
 ### 🌟 为什么选择 Xs-blog？
 
@@ -31,21 +31,20 @@
 
 ## 🎯 核心特性
 
-|    功能模块     |                     主要特性                      |     备注     |
-| --------------- | ------------------------------------------------- | ----------- |
-| **🚩 首页样式** | 可个人主页/博客模式任意切换                         | /           |
-| **📝 笔记模块** | Markdown 编辑、分类标签、密码保护、网盘资源、摘要显示 | /           |
-| **📋 便签模块**  | 便签分类、颜色标记、快速记录、关键词搜索              | 仅后台使用   |
-| **🖼️ 图库模块** | 图册分类、密码保护、图片预览、批量上传                | /           |
-| **🛍️ 服务模块** | 服务展示、分类管理、规格配置、下单按钮、推荐标记       | 不含支付接口 |
-| **🧭 导航模块** | 网站导航、分类展示、推荐功能                         | /           |
-| **📱 社交动态**  | 动态发布、图片/视频展示、支持iframe嵌入、抖音视频分享  | 可独立展示   |
-| **💬 留言模块** | 分类管理、验证码、邮件通知、IP频率限制                | /           |
-| **✅ 待办事项** | 进度管理、工时统计、智能提醒、时间记录、项目管控       | 仅后台使用   |
-| **🏢 官网主题** | 企业官网模板、中英文双语、团队成员、合作伙伴展示       | 可独立展示   |
-| **📚 文档中心**  | Markdown 文档展示、自动生成目录、全文搜索            | 可独立展示   |
-| **☁️S3云存储**  | 可兼容S3协议存储方式（支持市面上主流的对象储存）       | /           |
-| **📊 数据统计** | 仪表盘访问趋势、模块统计、IP排行、实时监控            | /           |
+|      功能模块      |                      主要特性                       |    备注    |
+| ---------------- | -------------------------------------------------- | --------- |
+| **🚩 多主题首页** | 个人主页 / 博客 / 官网 / 朋友圈多种主题可切换          | /         |
+| **📝 内容与博客** | 图文笔记、分类标签、附件资源、留言与留言分类            | /         |
+| **🧭 导航与社交** | 网站导航（前台/后台）、社交链接图标与二维码、排序与展示  | /         |
+| **🛍️ 服务与订单** | 服务商品与分类、规格计价、订单管理、虚拟卡密发放        | /         |
+| **💳 支付体系**   | 易支付（epay）、PayPal、多通道配置、支付/发货通知      | 需自行配置 |
+| **📋 个人效率**   | 便签、待办事项、工时记录、提醒与统计                   | 仅后台使用 |
+| **🖼️ 图库**       | 图库/图册分类、批量上传与排序、                       |           |
+| **🖼️ 动态**       | 朋友圈/社交动态展示                                  | 可独立展示 |
+| **📚 文档中心**   | Markdown 文档、自动目录、站内搜索                    | 可独立展示 |
+| **⚙️ 系统配置**   | S3 兼容存储、主题与文案配置、全局资源管理、版本更新检查 | /         |
+| **☁️ S3 云存储**  | 兼容主流对象存储服务，上传图片/附件统一托管            | /         |
+| **📊 数据统计**   | 仪表盘访问趋势、模块统计、IP 排行、今日概览            | /         |
 
 ---
 
@@ -72,12 +71,6 @@
 - **验证码**: SVG-captcha
 - **云存储**: AWS S3 SDK + S3兼容存储服务
 - **缓存**: Node-cache (内存缓存)
-
-### 数据库设计
-- **33张核心数据表**，支持完整业务逻辑
-- **外键约束**保证数据完整性
-- **组合索引**优化查询性能
-- **支持数据迁移**和版本控制
 
 ---
 
@@ -115,17 +108,17 @@ cd Xs-blog
 mysql -u root -p -e "CREATE DATABASE xsblog888 CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
 # 导入数据库结构
-mysql -u root -p xsblog888 < ../database/install.sql
+mysql -u root -p xsblog888 < ../database/schema.sql
 ```
 
 #### SQLite 方式 (轻量)
 
 ```bash
 # 复制 SQLite 数据库文件
-cp ../database/install-sqlite.sql ./database/
+cp ../database/schema-sqlite.sql ./database/
 
 # 初始化数据库
-sqlite3 database/xsblog.db < database/install-sqlite.sql
+sqlite3 database/xsblog.db < database/schema-sqlite.sql
 ```
 
 #### PostgreSQL 方式 (最佳)
@@ -145,7 +138,7 @@ GRANT ALL PRIVILEGES ON DATABASE xsblog TO xsblog_user;
 \q
 
 # 导入数据库结构
-psql -U xsblog_user -d xsblog -f ../database/install-pgsql.sql
+psql -U xsblog_user -d xsblog -f ../database/schema-pgsql.sql
 ```
 
 ### 第 3 步：配置后端
@@ -158,6 +151,8 @@ npm install --production
 ```
 
 **配置环境变量** (`backend/.env`)：
+
+> 配置前请删除.env示例文件配置项后面的注释！
 
 ```bash
 # 数据库配置 (MySQL)
@@ -198,9 +193,6 @@ SMTP_PORT=587
 SMTP_USER=你的邮箱
 SMTP_PASS=邮箱密码
 
-# 授权配置（必填）
-AUTH_CODE=向作者免费索要授权码
-
 ```
 
 **生成随机密钥**：
@@ -226,13 +218,13 @@ PORT=3000
 ```
 
 **API 地址配置（重要）**
-修改文件：`frontend/public/config.js`
+修改文件：`frontend/.env.production`
 
 根据您的部署方式选择配置：
 
 **【方式一】Nginx 反向代理模式**
-```javascript
-API_URL: '/api',
+```bash
+NEXT_PUBLIC_API_URL=/api
 ```
 
 适用场景：前端和后端通过 Nginx 统一入口访问（隐藏端口）
@@ -254,28 +246,28 @@ server {
 ```
 
 **【方式二】前后端分离模式（跨域/跨服务器）**
-```javascript
-API_URL: 'http://192.168.1.100:3001/api',
-// 或
-API_URL: 'https://api.yourdomain.com/api',
+```bash
+NEXT_PUBLIC_API_URL=http://192.168.1.100:3001/api
+# 或
+NEXT_PUBLIC_API_URL=https://api.yourdomain.com/api
 ```
 
 适用场景：前端和后端部署在不同服务器或不同域名
 注意：需要在后端 .env 文件中配置 CORS_ORIGIN 允许前端域名
 
 **【方式三】同服务器直连模式**
-```javascript
-API_URL: 'http://localhost:3001/api',
-// 或
-API_URL: 'http://你的服务器IP:3001/api',
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
+# 或
+NEXT_PUBLIC_API_URL=http://你的服务器IP:3001/api
 ```
 
 适用场景：前后端部署在同一服务器，通过不同端口访问
 
 **【方式四】自动检测模式（推荐新手使用）**
-```javascript
-API_URL: '',
-BACKEND_PORT: '3001',
+```bash
+NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_BACKEND_PORT=3001
 ```
 
 适用场景：前后端部署在同一服务器，端口不同
@@ -285,7 +277,7 @@ BACKEND_PORT: '3001',
 - 访问 http://123.4.5.6:3000 → 自动调用 http://123.4.5.6:3001/api
 - 访问 http://example.com:3000 → 自动调用 http://example.com:3001/api
 
-> ⚠️ **注意**：修改 config.js 后不需要重新构建，刷新浏览器即可生效！
+> ⚠️ **注意**：修改 .env.production 后需要重新构建前端：`npm run build`
 
 **ico图标替换** `frontend/public/favicon.ico`
 
@@ -382,7 +374,6 @@ server {
 | `JWT_SECRET`  | JWT 加密密钥              | -                    | 必填 (≥32位) |
 | `PORT`        | 后端端口                  | 3001                 | 否           |
 | `CORS_ORIGIN` | 前端地址                  | 空 (自动检测)          | 否           |
-| `AUTH_CODE `  | 授权码                    | 联系作者获取           | 是           |
 | `UPLOAD_PATH` | 文件上传路径               | ./uploads            | 是           |
 
 
@@ -396,49 +387,6 @@ server {
 
 ---
 
-
-
-## ⚡ 性能优化
-
-- **前端优化**
-  - Next.js 16 智能代码分割
-  - 图片懒加载和 WebP 格式支持
-  - React 19 并发特性优化
-  - Service Worker 离线缓存
-
-- **后端优化**
-  - 数据库连接池
-  - API 响应压缩
-  - 图片处理和缓存
-
-- **数据库优化**
-  - 33个组合索引
-  - 查询性能提升 80%+
-  - 分页查询优化
-
----
-
-## 🔒 安全特性
-
-- **前端安全**
-  - CSP 内容安全策略
-  - XSS 攻击防护
-  - 敏感信息加密存储
-
-- **后端安全**
-  - JWT 身份验证
-  - bcrypt 密码加密
-  - SQL 注入防护
-  - CORS 跨域控制
-  - 请求频率限制
-  - 安全头设置 (Helmet)
-
-- **数据安全**
-  - 数据库备份功能
-  - 完整性校验
-
-
----
 
 ## 🤝 贡献指南
 
